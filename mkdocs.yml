@@ -2,6 +2,7 @@ site_name: Ims Docs
 theme: readthedocs
 nav:
     - Home: index.md
+    - CMemoryCategory: cMemoryCategory.md
     - cppVirtualFun: cppVirtualFun.md
     - BackQuestion: back-end.md
     - About: about.md
