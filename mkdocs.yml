@@ -2,6 +2,11 @@ site_name: Ims Docs
 theme: readthedocs
 nav:
     - Home: index.md
+    - dataStruct: dataStruct.md
+    - database: database.md
+    - http: http.md
+    - tcp/ip: tcp_ip.md
+    - IPC: IPC.md
     - CMemoryCategory: cMemoryCategory.md
     - cppVirtualFun: cppVirtualFun.md
     - BackQuestion: back-end.md
