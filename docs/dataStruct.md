@@ -1,9 +1,185 @@
 [toc]
 
+
 # data Struct
 
-## AVL树
-### AVL树(平衡二叉树)
+## 二叉搜索树BST
+*Binary Search Tree*
+
+### BST树定义
++ 二叉查找树的节点包含键值key。它的左子树不为空，那么左子树上所有节点的key都小于根节点的key; 它的右子树不为空，那么右子树上所有节点的key都大于根节点的key
++ 它的左右子树也分为二叉排序树。
+
+### 前序遍历DLR
+*根结点 ---> 左子树 ---> 右子树*
+```
+void front(Tree* node)  //前序遍历  
+{  
+	if(node){  
+		cout << node->val <<"  ";  
+		front(node->lchild);  
+		front(node->rchild);  
+	}  
+}  
+```
+
+### 中序遍历LDR
+*左子树---> 根结点 ---> 右子树*
+
+```
+void middle(Tree* node)  //中序遍历  
+{  
+	if(node){  
+        middle(node->lchild);  
+		cout<<node->val<<"  ";  
+		middle(node->rchild);  
+	}  
+}  
+```
+### 后序遍历LRD
+*左子树 ---> 右子树 ---> 根结点*
+
+```
+void back(Tree* node)  //后序遍历 
+{  
+	if(node){  
+		back(node->lchild);  
+		back(node->rchild);  
+		cout<<node->val<<"  ";   
+	}  
+}  
+```
+
+### test 程序
+```
+#include<queue>
+#include<iostream>  
+using namespace std;
+ 
+struct Tree{  
+	int val;            //结点数据  
+	struct Tree *lchild;        //左孩子  
+	struct Tree *rchild;        //右孩子  
+};  
+ 
+void addTree(Tree*  node,Tree*  p)  //创造二叉树  
+{  
+	queue<Tree* >q;
+	q.push(node);
+	Tree * tem=q.front();
+	while (!q.empty())
+	{
+		q.pop();
+		if (tem->lchild==NULL)
+		{
+			tem->lchild=p;
+			break;
+		}
+		if (tem->rchild==NULL)
+		{
+			tem->rchild=p;
+			break;
+		}
+		q.push(tem->lchild);
+		q.push(tem->rchild);
+		tem=q.front();
+	}
+ 
+}  
+ 
+void front(Tree* node)  //前序遍历  
+{  
+	if(node){  
+		cout<<node->val<<"  ";  
+		front(node->lchild);  
+		front(node->rchild);  
+	}  
+}  
+ 
+void middle(Tree* node)  //中序遍历  
+{  
+	if(node){  
+    middle(node->lchild);  
+		cout<<node->val<<"  ";  
+		middle(node->rchild);  
+	}  
+}  
+ 
+void back(Tree* node)  //后序遍历 
+{  
+	if(node){  
+		back(node->lchild);  
+		back(node->rchild);  
+		cout<<node->val<<"  ";   
+	}  
+}  
+void print(Tree* tree )  
+{  
+	if (!tree)
+	return ;
+	cout<<"order by layer:"<<endl;
+	queue<Tree* >q;
+	q.push(tree);
+ 
+	while ( !q.empty() )
+	{
+		Tree * tem=q.front();
+		q.pop();
+		cout<<tem->val<<"  ";
+		if (tem->lchild!=NULL)
+			q.push(tem->lchild);
+		if (tem->rchild!=NULL)
+			q.push(tem->rchild);
+ 
+	}
+	cout<<endl;
+}  
+ 
+int main()  
+{   
+	Tree* tree=NULL;
+	Tree* p;
+	printf("0 as end flag:\n");
+ 
+	int val; 
+	cin>>val;  
+	while(val!=0){    //判断输入  
+		p=new Tree ;		//创建新结点  
+		p->val = val;  
+		p->lchild = NULL;  
+		p->rchild = NULL;  
+		if(tree==NULL)  
+			tree=p;  
+		else  
+			addTree(tree,p);  
+		cin>>val;//读入用户输入  
+	}  
+	 print(tree);
+	 cout<<"first order:"<<endl;  
+	 front(tree);  
+	 cout<<"\nmiddle order:"<<endl;  
+	 middle(tree);  
+	 cout<<"\nback order:"<<endl;  
+	 back(tree);  
+   return 0;
+ 
+}  
+
+
+```
+
+
+
+
+
+
+
+
+
+## 自平衡二叉查找树AVL
+*Adelson-Velsky-Landis Tree*
+
+### AVL树定义
 
 AVL树本质上是一颗二叉查找树，但是它又具有以下特点：
 + 它是一棵空树或它的左右两个子树的高度差的绝对值不超过1，并且左右两个子树都是一棵平衡二叉树。
@@ -11,7 +187,7 @@ AVL树本质上是一颗二叉查找树，但是它又具有以下特点：
 
 ![image](dataStruct_pic/avl_1.png)
 
-### AVL树的作用：
+### AVL树的作用
 
 我们知道，对于一般的二叉搜索树（Binary Search Tree），其期望高度（即为一棵平衡树时）为log2n，其各操作的时间复杂度（O(log2n)）同时也由此而决定。但是，在某些极端的情况下（如在插入的序列是有序的时），二叉搜索树将退化成近似链或链，此时，其操作的时间复杂度将退化成线性的，即O(n)。
 ![image](dataStruct_pic/avl_2.png)
