@@ -4,14 +4,14 @@
 # data Struct
 
 ## 二叉搜索树BST
-*Binary Search Tree*
+*Binary Search Tree(不保证平衡)*
 
 二叉搜索树的基本操作花费时间和树高度成正比，对于n个节点的完全二叉树来说，基本操作时间位O(lgn)。 最坏情况是不分叉的单链，时间是 O(n). 随机二叉树期望高度是O(lg n).
 
 ### BST树定义
-+ 二叉查找树的节点包含键值key。它的左子树不为空，那么左子树上所有节点的key都小于根节点的key; 它的右子树不为空，那么右子树上所有节点的key都大于根节点的key
-+ 它的左右子树也分为二叉排序树。
++ 设 x 为二叉搜索树的一个节点，如果 y 是 x 左子树的一个节点，那么 y.key <= x.key； 如果 z 是 x 右子树的一个节点，那么 z.key >= x.key
 
+### [BSTCode](BST.cpp)
 ### 查询二叉搜索树
 
 ####  递归方式
@@ -113,129 +113,6 @@ if(node){
 }  
 }  
 ```
-
-### test 程序
-```
-#include<queue>
-#include<iostream>  
-using namespace std;
-
-struct Tree{  
-int val;            //结点数据  
-struct Tree *lchild;        //左孩子  
-struct Tree *rchild;        //右孩子  
-};  
-
-void addTree(Tree*  node,Tree*  p)  //创造二叉树  
-{  
-queue<Tree* >q;
-q.push(node);
-Tree * tem=q.front();
-while (!q.empty())
-{
-    q.pop();
-    if (tem->lchild==NULL)
-    {
-        tem->lchild=p;
-        break;
-    }
-    if (tem->rchild==NULL)
-    {
-        tem->rchild=p;
-        break;
-    }
-    q.push(tem->lchild);
-    q.push(tem->rchild);
-    tem=q.front();
-}
-
-}  
-
-void front(Tree* node)  //前序遍历  
-{  
-if(node){  
-    cout<<node->val<<"  ";  
-    front(node->lchild);  
-    front(node->rchild);  
-}  
-}  
-
-void middle(Tree* node)  //中序遍历  
-{  
-if(node){  
-middle(node->lchild);  
-    cout<<node->val<<"  ";  
-    middle(node->rchild);  
-}  
-}  
-
-void back(Tree* node)  //后序遍历 
-{  
-if(node){  
-    back(node->lchild);  
-    back(node->rchild);  
-    cout<<node->val<<"  ";   
-}  
-}  
-void print(Tree* tree )  
-{  
-if (!tree)
-return ;
-cout<<"order by layer:"<<endl;
-queue<Tree* >q;
-q.push(tree);
-
-while ( !q.empty() )
-{
-    Tree * tem=q.front();
-    q.pop();
-    cout<<tem->val<<"  ";
-    if (tem->lchild!=NULL)
-        q.push(tem->lchild);
-    if (tem->rchild!=NULL)
-        q.push(tem->rchild);
-
-}
-cout<<endl;
-}  
-
-int main()  
-{   
-Tree* tree=NULL;
-Tree* p;
-printf("0 as end flag:\n");
-
-int val; 
-cin>>val;  
-while(val!=0){    //判断输入  
-    p=new Tree ;		//创建新结点  
-    p->val = val;  
-    p->lchild = NULL;  
-    p->rchild = NULL;  
-    if(tree==NULL)  
-        tree=p;  
-    else  
-        addTree(tree,p);  
-    cin>>val;//读入用户输入  
-}  
-    print(tree);
-    cout<<"first order:"<<endl;  
-    front(tree);  
-    cout<<"\nmiddle order:"<<endl;  
-    middle(tree);  
-    cout<<"\nback order:"<<endl;  
-    back(tree);  
-return 0;
-
-}  
-
-
-```
-
-
-
-
-
 
 
 
