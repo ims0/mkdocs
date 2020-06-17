@@ -3,7 +3,7 @@
 
 # data Struct
 
-## 二叉搜索树BST
+## 二叉搜索树BST(左小右大)
 *Binary Search Tree(不保证平衡)*
 
 二叉搜索树的基本操作花费时间和树高度成正比，对于n个节点的完全二叉树来说，基本操作时间位O(lgn)。 最坏情况是不分叉的单链，时间是 O(n). 随机二叉树期望高度是O(lg n).
@@ -11,7 +11,7 @@
 ### BST树定义
 + 设 x 为二叉搜索树的一个节点，如果 y 是 x 左子树的一个节点，那么 y.key <= x.key； 如果 z 是 x 右子树的一个节点，那么 z.key >= x.key
 
-### [BSTCode](BST.cpp)
+### [BSTCode](cpp_code/BST.cpp)
 ### 查询二叉搜索树
 
 ####  递归方式
@@ -43,36 +43,6 @@ while x.left != NIL
     x = x.left
 return x
 ```
-#### 查最大值
-最大值在最右下方
-```
-TREE_MIN(x)
-while x.right != NIL
-    x = x.right
-return x
-```
-#### 插入
-
-```
-TREE_INSERT(T, z)
-y = NIL
-x = T.root
-while x != NIL
-    y = x
-    if z.key < x.key
-        x = x.left
-    else
-        x = x.right
-z.p = y
-if y == NIL
-    T.root = z
-elseif z.key < y.key
-    y.left = z
-else
-    y.right = z
-```
-
-
 
 ### 前序遍历DLR
 *根结点 ---> 左子树 ---> 右子树*
@@ -113,8 +83,6 @@ if(node){
 }  
 }  
 ```
-
-
 
 
 ## 自平衡二叉查找树AVL
@@ -189,164 +157,7 @@ AVL树的操作基本和二叉查找树一样，这里我们关注的是两个�
 
 ### AVL树的插入代码实现:
 
-```
-#include <iostream>
-
-using namespace std;
-
-#define DataType int
-
-/*
-定义AVL树的结构体，链式
-*/
-typedef struct AvlNode{
-DataType    data;
-AvlNode    * m_pLeft;
-AvlNode    * m_pRight;
-int height;
-}*AvlTree,*Position,AvlNode;
-
-//求两个数的最大值
-int Max(int a,int b)
-{
-return a>b?a:b;
-}
-//求树的高度
-int Height( AvlTree T)
-{
-if(NULL == T)
-    return -1;
-else
-    return T->height;
-}
-
-//单旋转右旋
-AvlTree singleRotateWithRight(AvlTree T)
-{
-AvlTree L = T->m_pLeft;
-T->m_pLeft = L->m_pRight;
-L->m_pRight = T;
-T->height = Max( Height(T->m_pLeft),Height(T->m_pRight) ) + 1;
-L->height = Max( Height(L->m_pLeft),Height(L->m_pRight) ) + 1;
-return L;    //此时L成为根节点了（可参考AVL的插入的左左情况的右旋图）
-}
-//单旋转左旋
-AvlTree singleRotateWithLeft(AvlTree T)
-{
-AvlTree R = T->m_pRight;
-T->m_pRight = R->m_pLeft;
-R->m_pLeft = T;
-T->height = Max( Height(T->m_pLeft),Height(T->m_pRight) ) + 1;
-R->height = Max( Height(R->m_pLeft),Height(R->m_pRight) ) + 1;
-return R;    //此时R成为根节点了（可参考AVL的插入的左左情况的左旋图）
-}
-//双旋转，先左后右
-AvlTree doubleRotateWithLeft(AvlTree T)        //先左后右
-{
-T->m_pLeft = singleRotateWithLeft(T->m_pLeft);
-return singleRotateWithRight(T);
-}
-//双旋转，先右后左
-AvlTree doubleRotateWithRight(AvlTree T)    //先右后左
-{
-T->m_pRight = singleRotateWithRight(T->m_pRight);
-return singleRotateWithLeft(T);
-}
-AvlTree AvlTreeInsert(AvlTree T, DataType x)
-{
-if(T == NULL)    //如果树为空
-{
-    T = (AvlNode *)malloc(sizeof(struct AvlNode));
-    if(T)
-    {
-        T->data = x;
-        T->m_pLeft    = NULL;
-        T->m_pRight = NULL;
-        T->height = 0;
-    }
-    else
-    {
-        cout << "空间不够" << endl;
-        exit(0);
-    }
-}
-else if( x < T->data)        //如果插入到T结点的左子树上
-{
-    T->m_pLeft = AvlTreeInsert(T->m_pLeft,x);    //先插入，后旋转
-    if(Height(T->m_pLeft) - Height(T->m_pRight) == 2) //只有可能是这个
-    {
-        if(x < T->m_pLeft->data)        //左左情况，只需要右旋转
-        {
-            T = singleRotateWithRight( T );
-        }
-        else                            //左右情况，双旋转,先左
-        {
-            T = doubleRotateWithLeft( T );
-        }
-    }
-}
-else if( x > T->data )
-{
-    T->m_pRight = AvlTreeInsert(T->m_pRight,x);
-    if(Height(T->m_pRight) - Height(T->m_pLeft) == 2)
-    {
-        if(x > T->m_pRight->data)        //右右情况，进行左旋
-        {
-            T = singleRotateWithLeft( T );
-        }
-        else                            //左右情况，双旋转,先右
-        {
-            T = doubleRotateWithRight( T );
-        }
-    }
-}
-//如果这个数已经存在，那么不进行插入
-T->height = Max(Height(T->m_pLeft),Height(T->m_pRight)) + 1;
-return T;
-}
-//递归实现中序遍历
-void inOrderVisitUseRecur(const AvlTree pCurrent)
-{
-if(pCurrent)
-{
-    inOrderVisitUseRecur(pCurrent->m_pLeft);
-    cout << pCurrent->data << " ";
-    if(pCurrent->m_pLeft)
-        cout << " leftChild: "<<pCurrent->m_pLeft->data;
-    else
-        cout << " leftChild: "<<"NULL" ;
-    if(pCurrent->m_pRight)
-        cout << " rightChild: "<<pCurrent->m_pRight->data;
-    else
-        cout << " rightChild: "<< "NULL";
-    cout << endl;
-    inOrderVisitUseRecur(pCurrent->m_pRight);
-}
-}
-int main()
-{
-AvlTree root = NULL;
-root = AvlTreeInsert(root,1);
-root = AvlTreeInsert(root,2);
-root = AvlTreeInsert(root,3);
-root = AvlTreeInsert(root,4);
-root = AvlTreeInsert(root,5);
-root = AvlTreeInsert(root,6);
-root = AvlTreeInsert(root,7);
-root = AvlTreeInsert(root,8);
-root = AvlTreeInsert(root,9);
-root = AvlTreeInsert(root,10);
-root = AvlTreeInsert(root,11);
-root = AvlTreeInsert(root,12);
-root = AvlTreeInsert(root,13);
-root = AvlTreeInsert(root,14);
-root = AvlTreeInsert(root,15);
-inOrderVisitUseRecur(root);
-return 0;
-}
-
-```
-
+[avl tree code](cpp_code/AVLTree.cpp)
 
 ## RB树
 https://www.jianshu.com/p/e136ec79235c
