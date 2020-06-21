@@ -37,6 +37,7 @@ void rotateWithLeftChild(AvlNode *&k2) {
   k1->height = max(height(k1->left), k2->height) + 1;
   k2 = k1;
 }
+
 /**
  * Rotate binary tree node with left child.
  * For AVL trees, this is a single rotation for case 1.
@@ -73,18 +74,18 @@ static const int ALLOWED_IMBALANCE = 1;
 void balance(AvlNode *&t) {
   if (t == nullptr)
     return;
-
-  if (height(t->left) - height(t->right) > ALLOWED_IMBALANCE)
+  if (height(t->left) - height(t->right) > ALLOWED_IMBALANCE){
     if (height(t->left->left) >= height(t->left->right))
       rotateWithLeftChild(t);
     else
       doubleWithLeftChild(t);
-  else if (height(t->right) - height(t->left) > ALLOWED_IMBALANCE)
+  }
+  else if (height(t->right) - height(t->left) > ALLOWED_IMBALANCE){
     if (height(t->right->right) >= height(t->right->left))
       rotateWithRightChild(t);
     else
       doubleWithRightChild(t);
-
+  }
   t->height = max(height(t->left), height(t->right)) + 1;
 }
 /**
@@ -137,6 +138,7 @@ void remove(const Comparable &x, AvlNode *&t) {
 
   balance(t);
 }
+
 void produceGraphviz(AvlNode *&tree, const string fileName) {
   if (tree == nullptr)
     return;
@@ -171,7 +173,7 @@ int main() {
   srand(time(NULL));
   AvlNode *p = nullptr;
   for (int i = 0; i < 20; ++i) {
-    int key = rand()&0X3F;
+    int key = rand() & 0X3F;
     cout << "add key:" << key << endl;
     insert(key, p);
   }
