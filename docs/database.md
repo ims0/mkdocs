@@ -3,9 +3,14 @@
 # mysql
 
 ## 数据库的基本操作
+
+### 修改用户密码
+`update user set authentication_string=password('123456') where user='ims';`
+
 ### 创建数据库
 
 `CREATE DATABASE 数据库名;`
+
 
 ### 创建表
 ```

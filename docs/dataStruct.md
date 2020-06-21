@@ -11,7 +11,7 @@
 ### BST树定义
 + 设 x 为二叉搜索树的一个节点，如果 y 是 x 左子树的一个节点，那么 y.key <= x.key； 如果 z 是 x 右子树的一个节点，那么 z.key >= x.key
 
-### [BSTCode](cpp_code/BST.cpp)
+### [BSTCode](cpp_code/bstTree.cpp)
 ### 查询二叉搜索树
 
 ####  递归方式
@@ -157,7 +157,7 @@ AVL树的操作基本和二叉查找树一样，这里我们关注的是两个�
 
 ### AVL树的插入代码实现:
 
-[avl tree code](cpp_code/AVLTree.cpp)
+[avl tree code](cpp_code/avlTree.cpp)
 
 ## RB树
 https://www.jianshu.com/p/e136ec79235c

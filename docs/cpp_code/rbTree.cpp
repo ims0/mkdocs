@@ -18,7 +18,7 @@ TreeNode *nil;
 };
 
 TreeNode gNilNode;
-void front(TreeNode *node) //Ç°Ğò±éÀú
+void front(TreeNode *node) //å‰åºéå†
 {
 if (node != &gNilNode) {
 cout << node->key << " ";
@@ -27,7 +27,7 @@ front(node->right);
 }
 }
 
-void middle(TreeNode *node) //ÖĞĞò±éÀú
+void middle(TreeNode *node) //ä¸­åºéå†
 {
 if (node != &gNilNode) {
 middle(node->left);
@@ -36,7 +36,7 @@ middle(node->right);
 }
 }
 
-void back(TreeNode *node) //ºóĞò±éÀú
+void back(TreeNode *node) //ååºéå†
 {
 if (node != &gNilNode) {
 back(node->left);
@@ -171,7 +171,7 @@ newNode->p = oldNode->p;
 
 void RbDeleteFixup(Tree *tree, TreeNode *x) {
 while (x != tree->root && x->color == BLACK) {
-if (x == x->p->left) { // x ÊÇ×ó×ÓÊ÷
+if (x == x->p->left) { // x æ˜¯å·¦å­æ ‘
 TreeNode *w = x->p->right;
 if (w->color == RED) {
 w->color = BLACK;
@@ -194,7 +194,7 @@ w->right->color = BLACK;
 LeftRotate(tree, x->p);
 x = tree->root;
 }
-} else { // x ÊÇÓÒ×ÓÊ÷
+} else { // x æ˜¯å³å­æ ‘
 TreeNode *w = x->p->left;
 if (w->color == RED) {
 w->color = BLACK;
@@ -317,7 +317,7 @@ RbInsertFixup(tree, z);
 }
 
 TreeNode *AllocNode(int key) {
-TreeNode *pNode = new TreeNode; //´´½¨ĞÂ½áµã
+TreeNode *pNode = new TreeNode; //åˆ›å»ºæ–°ç»“ç‚¹
 pNode->key = key;
 pNode->p = NULL;
 pNode->left = NULL;

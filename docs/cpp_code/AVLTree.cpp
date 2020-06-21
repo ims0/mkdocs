@@ -5,7 +5,7 @@ using namespace std;
 #define DataType int
 
 /*
-   ¶¨ÒåAVLÊ÷µÄ½á¹¹Ìå£¬Á´Ê½
+   å®šä¹‰AVLæ ‘çš„ç»“æ„ä½“ï¼Œé“¾å¼
    */
 typedef struct AvlNode{
     DataType    data;
@@ -14,12 +14,12 @@ typedef struct AvlNode{
     int height;
 }*AvlTree,*Position,AvlNode;
 
-//ÇóÁ½¸öÊıµÄ×î´óÖµ
+//æ±‚ä¸¤ä¸ªæ•°çš„æœ€å¤§å€¼
 int Max(int a,int b)
 {
     return a>b?a:b;
 }
-//ÇóÊ÷µÄ¸ß¶È
+//æ±‚æ ‘çš„é«˜åº¦
 int Height( AvlTree T)
 {
     if(NULL == T)
@@ -28,7 +28,7 @@ int Height( AvlTree T)
         return T->height;
 }
 
-//µ¥Ğı×ªÓÒĞı
+//å•æ—‹è½¬å³æ—‹
 AvlTree singleRotateWithRight(AvlTree T)
 {
     AvlTree L = T->m_pLeft;
@@ -36,9 +36,9 @@ AvlTree singleRotateWithRight(AvlTree T)
     L->m_pRight = T;
     T->height = Max( Height(T->m_pLeft),Height(T->m_pRight) ) + 1;
     L->height = Max( Height(L->m_pLeft),Height(L->m_pRight) ) + 1;
-    return L;    //´ËÊ±L³ÉÎª¸ù½ÚµãÁË£¨¿É²Î¿¼AVLµÄ²åÈëµÄ×ó×óÇé¿öµÄÓÒĞıÍ¼£©
+    return L;    //æ­¤æ—¶Læˆä¸ºæ ¹èŠ‚ç‚¹äº†ï¼ˆå¯å‚è€ƒAVLçš„æ’å…¥çš„å·¦å·¦æƒ…å†µçš„å³æ—‹å›¾ï¼‰
 }
-//µ¥Ğı×ª×óĞı
+//å•æ—‹è½¬å·¦æ—‹
 AvlTree singleRotateWithLeft(AvlTree T)
 {
     AvlTree R = T->m_pRight;
@@ -46,23 +46,23 @@ AvlTree singleRotateWithLeft(AvlTree T)
     R->m_pLeft = T;
     T->height = Max( Height(T->m_pLeft),Height(T->m_pRight) ) + 1;
     R->height = Max( Height(R->m_pLeft),Height(R->m_pRight) ) + 1;
-    return R;    //´ËÊ±R³ÉÎª¸ù½ÚµãÁË£¨¿É²Î¿¼AVLµÄ²åÈëµÄ×ó×óÇé¿öµÄ×óĞıÍ¼£©
+    return R;    //æ­¤æ—¶Ræˆä¸ºæ ¹èŠ‚ç‚¹äº†ï¼ˆå¯å‚è€ƒAVLçš„æ’å…¥çš„å·¦å·¦æƒ…å†µçš„å·¦æ—‹å›¾ï¼‰
 }
-//Ë«Ğı×ª£¬ÏÈ×óºóÓÒ
-AvlTree doubleRotateWithLeft(AvlTree T)        //ÏÈ×óºóÓÒ
+//åŒæ—‹è½¬ï¼Œå…ˆå·¦åå³
+AvlTree doubleRotateWithLeft(AvlTree T)        //å…ˆå·¦åå³
 {
     T->m_pLeft = singleRotateWithLeft(T->m_pLeft);
     return singleRotateWithRight(T);
 }
-//Ë«Ğı×ª£¬ÏÈÓÒºó×ó
-AvlTree doubleRotateWithRight(AvlTree T)    //ÏÈÓÒºó×ó
+//åŒæ—‹è½¬ï¼Œå…ˆå³åå·¦
+AvlTree doubleRotateWithRight(AvlTree T)    //å…ˆå³åå·¦
 {
     T->m_pRight = singleRotateWithRight(T->m_pRight);
     return singleRotateWithLeft(T);
 }
 AvlTree AvlTreeInsert(AvlTree T, DataType x)
 {
-    if(T == NULL)    //Èç¹ûÊ÷Îª¿Õ
+    if(T == NULL)    //å¦‚æœæ ‘ä¸ºç©º
     {
         T = (AvlNode *)malloc(sizeof(struct AvlNode));
         if(T)
@@ -74,20 +74,20 @@ AvlTree AvlTreeInsert(AvlTree T, DataType x)
         }
         else
         {
-            cout << "¿Õ¼ä²»¹»" << endl;
+            cout << "ç©ºé—´ä¸å¤Ÿ" << endl;
             exit(0);
         }
     }
-    else if( x < T->data)        //Èç¹û²åÈëµ½T½áµãµÄ×ó×ÓÊ÷ÉÏ
+    else if( x < T->data)        //å¦‚æœæ’å…¥åˆ°Tç»“ç‚¹çš„å·¦å­æ ‘ä¸Š
     {
-        T->m_pLeft = AvlTreeInsert(T->m_pLeft,x);    //ÏÈ²åÈë£¬ºóĞı×ª
-        if(Height(T->m_pLeft) - Height(T->m_pRight) == 2) //Ö»ÓĞ¿ÉÄÜÊÇÕâ¸ö
+        T->m_pLeft = AvlTreeInsert(T->m_pLeft,x);    //å…ˆæ’å…¥ï¼Œåæ—‹è½¬
+        if(Height(T->m_pLeft) - Height(T->m_pRight) == 2) //åªæœ‰å¯èƒ½æ˜¯è¿™ä¸ª
         {
-            if(x < T->m_pLeft->data)        //×ó×óÇé¿ö£¬Ö»ĞèÒªÓÒĞı×ª
+            if(x < T->m_pLeft->data)        //å·¦å·¦æƒ…å†µï¼Œåªéœ€è¦å³æ—‹è½¬
             {
                 T = singleRotateWithRight( T );
             }
-            else                            //×óÓÒÇé¿ö£¬Ë«Ğı×ª,ÏÈ×ó
+            else                            //å·¦å³æƒ…å†µï¼ŒåŒæ—‹è½¬,å…ˆå·¦
             {
                 T = doubleRotateWithLeft( T );
             }
@@ -98,21 +98,21 @@ AvlTree AvlTreeInsert(AvlTree T, DataType x)
         T->m_pRight = AvlTreeInsert(T->m_pRight,x);
         if(Height(T->m_pRight) - Height(T->m_pLeft) == 2)
         {
-            if(x > T->m_pRight->data)        //ÓÒÓÒÇé¿ö£¬½øĞĞ×óĞı
+            if(x > T->m_pRight->data)        //å³å³æƒ…å†µï¼Œè¿›è¡Œå·¦æ—‹
             {
                 T = singleRotateWithLeft( T );
             }
-            else                            //×óÓÒÇé¿ö£¬Ë«Ğı×ª,ÏÈÓÒ
+            else                            //å·¦å³æƒ…å†µï¼ŒåŒæ—‹è½¬,å…ˆå³
             {
                 T = doubleRotateWithRight( T );
             }
         }
     }
-    //Èç¹ûÕâ¸öÊıÒÑ¾­´æÔÚ£¬ÄÇÃ´²»½øĞĞ²åÈë
+    //å¦‚æœè¿™ä¸ªæ•°å·²ç»å­˜åœ¨ï¼Œé‚£ä¹ˆä¸è¿›è¡Œæ’å…¥
     T->height = Max(Height(T->m_pLeft),Height(T->m_pRight)) + 1;
     return T;
 }
-//µİ¹éÊµÏÖÖĞĞò±éÀú
+//é€’å½’å®ç°ä¸­åºéå†
 void inOrderVisitUseRecur(const AvlTree pCurrent)
 {
     if(pCurrent)
