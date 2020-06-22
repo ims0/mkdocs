@@ -14,8 +14,8 @@
 
 ## Code
 
-#### [BST code](cpp_code/BST.cpp)
-#### [RbTree code](cpp_code/rbTree.cpp)
+#### [BST code](code/bstTree.cpp)
+#### [RbTree code](code/rbTree.cpp)
 
 
 

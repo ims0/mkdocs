@@ -11,7 +11,6 @@
 
 `CREATE DATABASE 数据库名;`
 
-
 ### 创建表
 ```
 CREATE TABLE runoob_tbl(
