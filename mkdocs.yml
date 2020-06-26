@@ -8,6 +8,7 @@ nav:
     - tcp/ip: tcp_ip.md
     - IPC: IPC.md
     - net/cmd: linux_net_cmd.md
+    - DesignPattern : designPattern.md
     - CMemoryCategory: cMemoryCategory.md
     - cppVirtualFun: cppVirtualFun.md
     - BackQuestion: back-end.md
