@@ -2,15 +2,17 @@ site_name: Ims Docs
 theme: readthedocs
 nav:
     - Home: index.md
-    - dataStruct: dataStruct.md
-    - database: database.md
-    - http: http.md
-    - tcp/ip: tcp_ip.md
+    - DataStruct: dataStruct.md
+    - Algorithms: algorithms.md
+    - Database: database.md
+    - Http: http.md
+    - Tcp/Ip: tcp_ip.md
     - IPC: IPC.md
-    - net/cmd: linux_net_cmd.md
+    - Net/cmd: linux_net_cmd.md
     - DesignPattern : designPattern.md
     - CMemoryCategory: cMemoryCategory.md
-    - cppVirtualFun: cppVirtualFun.md
+    - CppVirtualFun: cppVirtualFun.md
+    - Question: question.md
     - BackQuestion: back-end.md
     - About: about.md
 

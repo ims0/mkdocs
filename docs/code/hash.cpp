@@ -16,7 +16,7 @@ template <typename Key> class _hash {
 public:
   size_t operator()(const Key &k) const;
 };
-
+//类模板显式具体化
 template <> class _hash<string> {
 public:
   size_t operator()(const string &key) {
