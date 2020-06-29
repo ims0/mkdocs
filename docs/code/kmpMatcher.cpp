@@ -20,59 +20,51 @@ template <typename Type> void print(Type &A, int N) {
   cout << endl;
 }
 
-int *ComputePrefixFunc(char *P, int M) {
-  int *stepIndex = new int[M];
-  stepIndex[0] = 0;
+int *ComputePrefixFunc(const char *P, int M) {
+  int *next = new int[M];
+  next[0] = 0;
   int k = 0;
 
   for (int q = 1; q < M; ++q) {
     while (k > 0 && (P[k] != P[q])) {
-      k = stepIndex[k];
+      k = next[k];
     }
     if (P[k] == P[q]) {
       ++k;
     }
-    stepIndex[q] = k;
+    next[q] = k;
   }
-  return stepIndex;
+  return next;
 }
 
-template <size_t N, size_t M> void KmpMatcher(char (&T)[N], char (&P)[M]) {
-
+template <size_t N, size_t MM>
+void KmpMatcher(char (&T)[N], const char (&P)[MM]) {
+  size_t M = MM - 1;
   print(P);
-  int *stepIndex = ComputePrefixFunc(P, M);
-  print(stepIndex, M);
+  int *next = ComputePrefixFunc(P, M);
+  print(next, M);
 
-  int q = 0;
+  size_t q = 0;
   for (size_t i = 0; i < N; ++i) {
     while (q > 0 && P[q] != T[i]) {
-      q = stepIndex[q];
+      q = next[q];
     }
     if (P[q] == T[i]) {
       ++q;
     }
     if (q == M) {
       cout << "match at:" << i - M << endl;
-      q = stepIndex[M - 1];
+      q = next[M - 1];
     }
   }
-  delete[] stepIndex;
+  delete[] next;
 }
 
 int main() {
 
   char T[] = "bacb_ababacab_ababacab_abab";
-#define PATTERN ("ababacab")
-  char p[sizeof(PATTERN) - 1];
-  const char *P = PATTERN;
-  sprintf(p, P, sizeof(PATTERN) - 1);
 
-  KmpMatcher(T, p);
-#define PATTERN2 ("abab")
-  char pp[sizeof(PATTERN2) - 1];
-  const char *PP = PATTERN;
-  sprintf(pp, PP, sizeof(PATTERN) - 1);
-
-  KmpMatcher(T, pp);
+  KmpMatcher(T, "ababacab");
+  KmpMatcher(T, "abab");
   return 0;
 }
