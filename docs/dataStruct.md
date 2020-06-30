@@ -1,48 +1,7 @@
-[toc]
-
-
 # data Struct
 
-## 二叉搜索树BST(左小右大)
-*Binary Search Tree(不保证平衡)*
+## 二叉树基本性质
 
-二叉搜索树的基本操作花费时间和树高度成正比，对于n个节点的完全二叉树来说，基本操作时间位O(lgn)。 最坏情况是不分叉的单链，时间是 O(n). 随机二叉树期望高度是O(lg n).
-
-### BST树定义
-+ 设 x 为二叉搜索树的一个节点，如果 y 是 x 左子树的一个节点，那么 y.key <= x.key； 如果 z 是 x 右子树的一个节点，那么 z.key >= x.key
-
-### [BSTCode](code/bstTree.cpp)
-### 查询二叉搜索树
-
-####  递归方式
-
-```
-TREE_SEARCH(x,k)
-if x == NIL or k == x.key
-    return x
-if k < x.key
-    return TREE_SEARCH(x.left,k)
-else return TREE_SEARCH(x.left,k)
-```
-####  循环 
-
-```
-ITER_TREE_SEARCH(x,k)
-while x != NIL && k != x.key
-    if k < x.key
-        x == x.left
-    else 
-        x = x.right
-return x
-```
-#### 查最小值
-根据二叉树的性质，最小值在最左下方
-```
-TREE_MIN(x)
-while x.left != NIL
-    x = x.left
-return x
-```
 
 ### 前序遍历DLR
 *根结点 ---> 左子树 ---> 右子树*
@@ -84,6 +43,64 @@ if(node){
 }  
 ```
 
+### 二叉树顺序推断
+
+前序遍历：根左右, 
+中序遍历：左根右, 
+后序遍历：左右根.
+
+* 前序的第一个是整个树的根
+* 后序的最后一个是整个树的根
+* 中序用来判别左右子树的划分
+* 前序序列中左子树部分的第一个节点是左子树的根节点
+* 前序序列中右子树部分的第一个节点是右子树的根节点
+
+例题：前序 HGEDBFCA, 中序 EGBDHFAC
+
+得到后续：EBDGACFH
+
+----
+
+## 二叉搜索树BST(左小右大)
+*Binary Search Tree(不保证平衡)*
+
+二叉搜索树的基本操作花费时间和树高度成正比，对于n个节点的完全二叉树来说，基本操作时间位O(lgn)。 最坏情况是不分叉的单链，时间是 O(n). 随机二叉树期望高度是O(lg n).
+
+### BST树定义
++ 设 x 为二叉搜索树的一个节点，如果 y 是 x 左子树的一个节点，那么 y.key <= x.key； 如果 z 是 x 右子树的一个节点，那么 z.key >= x.key
+
+### [BSTCode](code/bstTree.cpp)
+### 查询二叉搜索树
+
+####  递归方式
+
+```
+TREE_SEARCH(x,k)
+if x == NIL or k == x.key
+    return x
+if k < x.key
+    return TREE_SEARCH(x.left,k)
+else return TREE_SEARCH(x.left,k)
+```
+####  循环 
+
+```
+ITER_TREE_SEARCH(x,k)
+while x != NIL && k != x.key
+    if k < x.key
+        x == x.left
+    else 
+        x = x.right
+return x
+```
+#### 查最小值
+根据二叉树的性质，最小值在最左下方
+```
+TREE_MIN(x)
+while x.left != NIL
+    x = x.left
+return x
+```
 
 ## 自平衡二叉查找树AVL
 *Adelson-Velsky-Landis Tree*
@@ -178,3 +195,23 @@ https://www.jianshu.com/p/e136ec79235c
 + 性质5.1：如果一个结点存在黑子结点，那么该结点肯定有两个子结点
 
 图1就是一颗简单的红黑树。其中Nil为叶子结点，并且它是黑色的。(值得提醒注意的是，在Java中，叶子结点是为null的结点。)
+
+
+## B 树
+
+大部分非关系型数据库 mongoDB 用 B- 树作为索引
+
+### [定义](https://mp.weixin.qq.com/s?__biz=MzI2NjA3NTc4Ng==&mid=2652079363&idx=1&sn=7c2209e6b84f344b60ef4a056e5867b4&chksm=f1748ee6c60307f084fe9eeff012a27b5b43855f48ef09542fe6e56aab6f0fc5378c290fc4fc&scene=0&pass_ticket=75GZ52L7yYmRgfY0HdRdwlWLLEqo5BQSwUcvb44a7dDJRHFf49nJeGcJmFnj0cWg#rd)
+下面来具体介绍一下B-树（Balance Tree），一个m阶的B树具有如下几个特征：
+
+1. 根结点至少有两个子女。
+2. 每个中间节点都包含k-1个元素和k个孩子，其中 m/2 <= k <= m
+3. 每一个叶子节点都包含k-1个元素，其中 m/2 <= k <= m
+4. 所有的叶子结点都位于同一层。
+5. 每个节点中的元素从小到大排列，节点当中k-1个元素正好是k个孩子包含的元素的值域分划。
+
+## B+
+
+大部分关系型数据库 mysql 用 B+ 树作为索引
+
+
