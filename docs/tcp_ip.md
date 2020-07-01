@@ -157,15 +157,101 @@ tcpdump 查看交互消息
 
 ICMP（Internet Control Message Protocol）Internet控制报文协议。它是TCP/IP协议簇的一个子协议，用于在IP主机、路由器之间传递控制消息。控制消息是指网络通不通、主机是否可达、路由是否可用等网络本身的消息。这些控制消息虽然并不传输用户数据，但是对于用户数据的传递起着重要的作用。
 
+## ping 命令执行过程
 
-### 应用
-ICMP 协议应用在许多网络管理命令中，下面以 ping 和 tracert 命令为例详细介绍 ICMP 协议的应用。 [1] 
+### 同一网段
+
+1. ping通知系统建立一个固定格式的ICMP请求数据包
+
+2. ICMP协议打包这个数据包和机器B的IP地址转交给IP协议层（一组后台运行的进程，与ICMP类似）
+
+3. IP层协议将以机器B的IP地址为目的地址，本机IP地址为源地址，加上一些其他的控制信息，构建一个IP数据包
+
+4. 获取机器B的MAC地址
+
++ IP层协议通过机器B的IP地址和自己的子网掩码，发现它跟自己属同一网络，就直接在本网络查找这台机器的MAC
+
++ 若两台机器之前有过通信，在机器A的ARP缓存表应该有B机IP与其MAC的映射关系
+
++ 若没有，则发送ARP请求广播，得到机器B的MAC地址，一并交给数据链路层
+
++ 数据链路层构建一个数据帧，目的地址是IP层传过来的MAC地址，源地址是本机的MAC地址，再附加一些控制信息，依据以太网的介质访问规则，将他们传送出去
+
++ 机器B收到这个数据帧后，先检查目的地址，和本机MAC地址对比
+
++ 符合，接收。接收后检查该数据帧，将IP数据包从帧中提取出来，交给本机的IP协议层协议。IP层检查后，将有用的信息提取交给ICMP协议，后者处理后，马上构建一个ICMP应答包，发送给主机A，其过程和主机A发送ICMP请求包到主机B类似（这时候主机B已经知道了主机A的MAC地址，不需再发ARP请求）
+
++ 不符合，丢弃
+
+### 不同网段
+
+1. ping通知系统建立一个固定格式的ICMP请求数据包
+
+2. ICMP协议打包这个数据包和机器B的IP地址转交给IP协议层（一组后台运行的进程，与ICMP类似）
+
+3. IP层协议将以机器B的IP地址为目的地址，本机IP地址为源地址，加上一些其他的控制信息，构建一个IP数据包
+
+4. 获取主机B的MAC地址
+
+IP协议通过计算发现主机B与自己不在同一网段内，就直接交给路由处理，就是将路由的MAC取过来，至于怎么得到路由的MAC地址，和之前一样，先在ARP缓存表中寻找，找不到可以利用广播。路由得到这个数据帧之后，再跟主机B联系，若找不到，就向主机A返回一个**超时信息**。
+
+
+### 返回信息分析
+
+1. Request timed out
+
++ 对方已关机，或者网络上没有这个地址
++ 对方与自己不在同一网段内，通过路由也无法到达
++ 对方存在，不过设置了ICMP数据包过滤（比如防火墙设置）
++ 错误设置IP地址
+
+2. Destination host Unreachable
+
++ 自己未设定默认路由，对方跟自己不在同已网段
++ 网线有问题
+
+3. Bad ip address
+
++ 没有连接到DNS服务器，无法解析IP，也可能是IP不存在
+
+4. Source quench received
+
++ 对方或中途服务器繁忙而无法应答
+
+5. Unkonw host
+
++ 远程主机的名字不能被域名服务器转换成IP地址，故障原因可能是DNS服务器有故障，或者名字不正确，或者网络管理员的系统与远程主机之间的通信线路故障。
+
+6. No answer
+
++ 无响应。说明本地系统有一条通向中心主机的路由，但却接收不到它发给该中心主机的人呢和信息。故障原因可能是：中心主机没有工作；本地或中心主机网络配置不正确；本地或中心的路由器没有工作；通信线路有故障；中心主机存在路由选择问题。
+
+7. Ping 127.0.0.1
+
++  如果ping不通，则表明本地址TCP/IP协议不能正常工作
+
+8. no rout to host
+
++ 网卡工作不正常
+
+9. transmit failed。error code
+
++  10043网卡驱动不正常
+
+10. unknown host name
+
++ DNS配置不正确
+
+### ICMP 应用(ping tracert)
+ICMP 协议应用在许多网络管理命令中，下面以 ping 和 tracert 命令为例详细介绍 ICMP 协议的应用。 
 
 （1） ping 命令使用 ICMP 回送请求和应答报文
 在网络可达性测试中使用的分组网间探测命令 ping 能产生 ICMP 回送请求和应答报文。目的主机收到 ICMP 回送请求报文后立刻回送应答报文，若源主机能收到 ICMP 回送应答报文，则说明到达该主机的网络正常。
 
 （2）路由分析诊断程序 tracert 使用了 ICMP时间超过报文
 tracert 命令主要用来显示数据包到达目的主机所经过的路径。通过执行一个 tracert 到对方主机的命令，返回数据包到达目的主机所经历的路径详细信息，并显示每个路径所消耗的时间。
+
+
 ----
 
 ## 网络问题
@@ -191,22 +277,21 @@ tracert 命令主要用来显示数据包到达目的主机所经过的路径。
 
 如下图所示：主动关闭的那端 在发送ACK后会经历这个状态，该状态持续时间是最长分节生命期(maximum segment lifetime, MSL)的两倍，也称2MSL
 
+![avatar](tcp_ip_pic/net_state_conv.png)
+
 #### time_wait 存在的两个理由：
 1. 可靠的实现TCP全双工连接的终止。
 2. 允许老的重复分节在网络中消逝。
 
-![avatar](tcp_ip_pic/net_state_conv.png)
+详细解释：
+
+1. 防止上一次连接中的包，迷路后重新出现，影响新连接
+（经过2MSL，上一次连接中所有的重复包都会消失）
+2. 可靠的关闭TCP连接 在主动关闭方发送的最后一个 ack(fin) ，有可能丢失，这时被动方会重新发 fin, 如果这时主动方处于 CLOSED 状态 ，就会响应 rst 而不是 ack。所以 主动方要处于 TIME_WAIT 状态，而不能是 CLOSED 
+
 ### time_wait，close_wait状态产生原因，
 
-
-+ `TIME_WAIT：表示收到了对方的FIN报文，并发送出了ACK报文。 
-
 TIME_WAIT状态下的TCP连接会等待2*MSL（Max Segment Lifetime，最大分段生存期，指一个TCP报文在Internet上的最长生存时间。每个具体的TCP协议实现都必须选择一个确定的MSL值，RFC 1122建议是2分钟，但BSD传统实现采用了30秒，Linux可以cat /proc/sys/net/ipv4/tcp_fin_timeout看到本机的这个值），然后即可回到CLOSED 可用状态了。如果FIN_WAIT_1状态下，收到了对方同时带FIN标志和ACK标志的报文时，可以直接进入到TIME_WAIT状态，而无须经过FIN_WAIT_2状态。
-
-
-如果使用了nginx代理，那么系统TIME_WAIT的数量会变得比较多，这是由于nginx代理使用了短链接的方式和后端交互的原因，使得nginx和后端的ESTABLISHED变得很少而TIME_WAIT很多。这不但发生在安装nginx的代理服务器上，而且也会使后端的app服务器上有大量的TIME_WAIT。查阅TIME_WAIT资料，发现这个状态很多也没什么大问题，但可能因为它占用了系统过多的端口，导致后续的请求无法获取端口而造成障碍。
-
-虽然TIME_WAIT会造成一些问题，但是要完全枪毙掉它也是不正当的，虽然看起来这么做没什么错。 所以目前看来最好的办法是让每个TIME_WAIT早点过期。
 
 #### 让每个TIME_WAIT早点过期,在linux上可以这么配置：
 
@@ -222,59 +307,21 @@ TIME_WAIT状态下的TCP连接会等待2*MSL（Max Segment Lifetime，最大分�
 + 查看系统本地可用端口极限值
     `cat /proc/sys/net/ipv4/ip_local_port_range`
 
-用这条命令会返回两个数字，默认是：32768 61000，说明这台机器本地能向外连接61000-32768=28232个连接，注意是本地向外连接，不是这台机器的所有连接，不会影响这台机器的80端口的对外连接数。但这个数字会影响到代理服务器（nginx）对app服务器的最大连接数，因为nginx对app是用的异步传输，所以这个环节的连接速度很快，所以堆积的连接就很少。假如nginx对app服务器之间的带宽出了问题或是app服务器有问题，那么可能使连接堆积起来，这时可以通过设定nginx的代理超时时间，来使连接尽快释放掉，一般来说极少能用到28232个连接。
+用这条命令会返回两个数字，默认是：32768 61000，说明这台机器本地能向外连接61000-32768=28232个连接，注意是本地向外连接，不是这台机器的所有连接，不会影响这台机器的80端口的对外连接数。但这个数字会影响到代理服务器（nginx）对app服务器的最大连接数，因为nginx对app是用的异步传输，所以这个环节的连接速度很快，所以堆积的连接就很少。
 
-因为有软件使用了40000端口监听，常常出错的话，可以通过设定ip_local_port_range的最小值来解决：
 
-`echo "40001 61000" > /proc/sys/net/ipv4/ip_local_port_range`
 
-但是这么做很显然把系统可用端口数减少了，这时可以把ip_local_port_range的最大值往上调，但是好习惯是使用不超过32768的端口来侦听服务，另外也不必要去修改ip_local_port_range数值成1024 65535之类的，意义不大。
-
-因为使用了nginx代理，在windows下也会造成大量TIME_WAIT，当然windows也可以调整：
-
-在注册表（regedit）的HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters上添加一个DWORD类型的值TcpTimedWaitDelay，值就是秒数，即可。
-
-windows默认是重用TIME_WAIT，我现在还不知道怎么改成不重用的，本地端口也没查到是什么值，但这些都关系不大，都可以按系统默认运作。
-
-### TIME_WAIT状态
-
-根据TCP协议，主动发起关闭的一方，会进入TIME_WAIT状态，持续2\*MSL(Max Segment Lifetime)，缺省为240秒，在这个post中简洁的介绍了为什么需要这个状态。
-
-值得一说的是，对于基于TCP的HTTP协议，关闭TCP连接的是Server端，这样，Server端会进入TIME_WAIT状态，可想而知，对于访问量大的Web Server，会存在大量的TIME_WAIT状态，假如server一秒钟接收1000个请求，那么就会积压240\*1000=240，000个TIME_WAIT的记录，维护这些状态给Server带来负担。当然现代操作系统都会用快速的查找算法来管理这些TIME_WAIT，所以对于新的TCP连接请求，判断是否hit中一个TIME_WAIT不会太费时间，但是有这么多状态要维护总是不好。
-
-+ HTTP协议1. 1版规定default行为是Keep-Alive，
-
-也就是会重用TCP连接传输多个request/response，一个主要原因就是发现了这个问题。还有一个方法减缓TIME_WAIT压力就是把系统的2*MSL时间减少，因为240秒的时间实在是忒长了点，对于Windows，修改注册表，在HKEY_LOCAL_MACHINE\ SYSTEM\CurrentControlSet\Services\ Tcpip\Parameters上添加一个DWORD类型的值TcpTimedWaitDelay，一般认为不要少于60，不然可能会有麻烦。
-对于大型的服务，一台server搞不定，需要一个LB(Load Balancer)把流量分配到若干后端服务器上，如果这个LB是以NAT方式工作的话，可能会带来问题。假如所有从LB到后端Server的IP包的source address都是一样的(LB的对内地址），那么LB到后端Server的TCP连接会受限制，因为频繁的TCP连接建立和关闭，会在server上留下TIME_WAIT状态，而且这些状态对应的remote address都是LB的，LB的source port撑死也就60000多个(2^16=65536,1~1023是保留端口，还有一些其他端口缺省也不会用），每个LB上的端口一旦进入Server的TIME_WAIT黑名单，就有240秒不能再用来建立和Server的连接，这样LB和Server最多也就能支持300个左右的连接。如果没有LB，不会有这个问题，因为这样server看到的remote address是internet上广阔无垠的集合，对每个address，60000多个port实在是够用了。
-一开始我觉得用上LB会很大程度上限制TCP的连接数，但是实验表明没这回事，LB后面的一台Windows Server 2003每秒处理请求数照样达到了600个，难道TIME_WAIT状态没起作用？用Net Monitor和netstat观察后发现，Server和LB的XXXX端口之间的连接进入TIME_WAIT状态后，再来一个LB的XXXX端口的SYN包，Server照样接收处理了，而是想像的那样被drop掉了。
     
-翻书，从书堆里面找出覆满尘土的大学时代买的《UNIX Network Programming, Volume 1, Second Edition: Networking APIs: Sockets and XTI》，中间提到一句，对于BSD-derived实现，只要SYN的sequence number比上一次关闭时的最大sequence number还要大，那么TIME_WAIT状态一样接受这个SYN，难不成Windows也算BSD-derived?有了这点线索和关键字(BSD)，找到这个post，在NT4. 0的时候，还是和BSD-derived不一样的，不过Windows Server 2003已经是NT5. 2了，也许有点差别了。
-    做个试验，用Socket API编一个Client端，每次都Bind到本地一个端口比如2345，重复的建立TCP连接往一个Server发送Keep-Alive=false的HTTP请求，Windows的实现让sequence number不断的增长，所以虽然Server对于Client的2345端口连接保持TIME_WAIT状态，但是总是能够接受新的请求，不会拒绝。那如果SYN的Sequence Number变小会怎么样呢？同样用Socket API，不过这次用Raw IP，发送一个小sequence number的SYN包过去，Net Monitor里面看到，这个SYN被Server接收后如泥牛如海，一点反应没有，被drop掉了。
-    按照书上的说法，BSD-derived和Windows Server 2003的做法有安全隐患，不过至少这样至少不会出现TIME_WAIT阻止TCP请求的问题，当然，客户端要配合，保证不同TCP连接的sequence number要上涨不要下降。
-
 ### Socket中的TIME_WAIT状态
-在高并发短连接的server端，当server处理完client的请求后立刻closesocket此时会出现time_wait状态然后如果client再并发2000个连接，此时部分连接就连接不上了,用linger强制关闭可以解决此问题，但是linger会导致数据丢失，linger值为0时是强制关闭,无论并发多少多能正常连接上,如果非0会发生部分连接不上的情况!（可调用setsockopt设置套接字的linger延时标志，同时将延时时间设置为0。）
-TCP/IP的RFC文档。
-
-TIME_WAIT是TCP连接断开时必定会出现的状态。 是无法避免掉的，这是TCP协议实现的一部分。 在WINDOWS下，可以修改注册表让这个时间变短一些 time_wait的时间为2msl,默认为4min. 你可以通过改变这个变量: TcpTimedWaitDelay 把它缩短到30s TCP要保证在所有可能的情况下使得所有的数据都能够被投递。当你关闭一个socket时，主动关闭一端的socket将进入TIME_WAIT状态，而被动关闭一方则转入CLOSED状态，这的确能够保证所有的数据都被传输。当一个socket关闭的时候，是通过两端互发信息的四次握手过程完成的，当一端调用close()时，就说明本端没有数据再要发送了。这好似看来在握手完成以后，socket就都应该处于关闭CLOSED状态了。但这有两个问题，首先，我们没有任何机制保证最后的一个ACK能够正常传输，第二，网络上仍然有可能有残余的数据包(wandering duplicates)，我们也必须能够正常处理。 通过正确的状态机，我们知道双方的关闭过程如下
 
 假设最后一个ACK丢失了，服务器会重发它发送的最后一个FIN，所以客户端必须维持一个状态信息，以便能够重发ACK；如果不维持这种状态，客户端在接收到FIN后将会响应一个RST，服务器端接收到RST后会认为这是一个错误。如果TCP协议能够正常完成必要的操作而终止双方的数据流传输，就必须完全正确的传输四次握手的四个节，不能有任何的丢失。这就是为什么socket在关闭后，仍然处于 TIME_WAIT状态，因为他要等待以便重发ACK。
 如果目前连接的通信双方都已经调用了close()，假定双方都到达CLOSED状态，而没有TIME_WAIT状态时，就会出现如下的情况。现在有一个新的连接被建立起来，使用的IP地址与端口与先前的完全相同，后建立的连接又称作是原先连接的一个化身。还假定原先的连接中有数据报残存于网络之中，这样新的连接收到的数据报中有可能是先前连接的数据报。为了防止这一点，TCP不允许从处于TIME_WAIT状态的socket建立一个连接。处于TIME_WAIT状态的socket在等待两倍的MSL时间以后（之所以是两倍的MSL，是由于MSL是一个数据报在网络中单向发出到认定丢失的时间，一个数据报有可能在发送图中或是其响应过程中成为残余数据报，确认一个数据报及其响应的丢弃的需要两倍的MSL），将会转变为CLOSED状态。这就意味着，一个成功建立的连接，必然使得先前网络中残余的数据报都丢失了。
 由于TIME_WAIT状态所带来的相关问题，我们可以通过设置SO_LINGER标志来避免socket进入TIME_WAIT状态，这可以通过发送RST而取代正常的TCP四次握手的终止方式。但这并不是一个很好的主意，TIME_WAIT对于我们来说往往是有利的。
 
-+ 客户I端与服务器端建立TCP/IP连接后关闭SOCKET后，服务器端连接的端口 状态为TIME_WAIT 是不是所有执行主动关闭的socket都会进入TIME_WAIT状态呢？
++ 客户I端与服务器端建立TCP/IP连接后关闭SOCKET后，服务器端连接的端口 状态为TIME_WAIT 是不是所有执行主动关闭的socket都会进入TIME_WAIT状态呢？ 有没有什么情况使主动关闭的socket直接进入CLOSED状态呢？
 
-有没有什么情况使主动关闭的socket直接进入CLOSED状态呢？
 主动关闭的一方在发送最后一个 ack 后 就会进入 TIME_WAIT 状态 停留2MSL（max segment lifetime）时间这个是TCP/IP必不可少的，也就是“解决”不了的。
 
-也就是TCP/IP设计者本来是这么设计的 主要有两个原因
-
-1. 防止上一次连接中的包，迷路后重新出现，影响新连接
-（经过2MSL，上一次连接中所有的重复包都会消失）
-2. 可靠的关闭TCP连接 在主动关闭方发送的最后一个 ack(fin) ，有可能丢失，这时被动方会重新发 fin, 如果这时主动方处于 CLOSED 状态 ，就会响应 rst 而不是 ack。所以 主动方要处于 TIME_WAIT 状态，而不能是 CLOSED 。
-
-TIME_WAIT 并不会占用很大资源的，除非受到攻击。
-还有，如果一方 send 或 recv 超时，就会直接进入 CLOSED 状态
 
 什么是滑动窗口，超时重传，
 
@@ -295,9 +342,7 @@ connect会阻塞，怎么解决?(必考必问)
 每次读操作返回前都要检查是否还有剩余数据没读完，如果是的话保持数据有效标志，不这样设计的话会出现明显的不一致，那就是数据在读缓冲但没有读有效标志。
 
 
-### TCP和UDP三次握手和四次挥手状态及消息类型,
-待补充
-#### keepalive是什么东东？如何使用？
+#### keepalive如何使用？
 
 设置Keepalive参数，检测已中断的客户连接 在TCP中有一个Keep-alive的机制可以检测死连接，原理很简单，TCP会在空闲了一定时间后发送数据给对方：
 
@@ -322,6 +367,35 @@ connect会阻塞，怎么解决?(必考必问)
 
 ### 描述在浏览器中敲入一个网址并按下回车后所发生的事情
 
-+ PING命令
 
-ping命令所利用的原理是这样的:网络上的机器都有唯一确定的IP地址，我们给目标IP地址发送一个数据包，对方就要返回一个同样大小的数据包，根据返回的数据包我们可以确定目标主机的存在，可以初步判断目标主机的操作系统等。
+1. 语法解析网址，如果你的网址不合法则抛异常，比如 
+你录入 http://www.baidu.com 浏览器就调用http协议 
+录入 ftp://ftp.tsinghua.edu.cn 浏览器就调用ftp协议
+录入浏览器不识别的协议则报错
+
+以下只针对http协议
+
+2. 查询cache
+网址被分段解析后，浏览器首先在本地缓存查询cache，如果cache被标明是最新的则直接使用缓存内容。
+
+3. DNS解析（可选）
+向dns缓存服务(DNS client)或服务器查询域名对应的ip
+
+4. 连接服务器（可选）
+tcp/ip 握手连接服务器，如果已经有了被保持的连接，则复用此连接（Connection: Keep-Alive）
+
+5. 发送http请求
+向指定ip发送请求，具体http header定义查看 rfc文档
+例如如果本地有cache但不能确定是否是最新的cache则发送
+If-Modified-Since 和 If-None-Match 头
+
+6. 接收服务器响应
+如果服务器响应为重定向（301或302）则浏览器必须取响应的Location ，然后重复1-6步骤。
+如果服务器响应为304，则浏览器使用本地cache
+如果响应为200，则接收具体的数据。
+
+7. 断开同服务器的连接（可选）
+如果服务器响应为Connection: Keep-Alive，则需要保持连接，备后继http使用
+
+8. 写cache
+将可以缓存的内容保存到cache
