@@ -64,6 +64,7 @@ int main() {
 
   char T[] = "bacb_ababacab_ababacab_abab";
 
+  KmpMatcher(T, "ababaaab");
   KmpMatcher(T, "ababacab");
   KmpMatcher(T, "abab");
   return 0;
