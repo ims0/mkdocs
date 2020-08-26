@@ -8,26 +8,26 @@ void print(int V[], int len) {
 }
 
 // 快速排序
-void quickSort(int s[], int left, int right) {
+void quickSort(int arr[], int left, int right) {
   if (left < right) {
     int i = left;
     int j = right;
-    int key = s[left];
-    printf("key:%d; ", key);
+    int boundary = arr[left];
+    printf("boundary:%d; ", boundary);
     while (i < j) {
-      while (i < j && s[j] >= key) // 从右向左找第一个小于key的数
+      while (i < j && arr[j] >= boundary) // 从右向左找第一个 < boundary的数
         j--;
       if (i < j)
-        s[i++] = s[j];
-      while (i < j && s[i] < key) // 从左向右找第一个大于等于key的数
+        arr[i++] = arr[j];
+      while (i < j && arr[i] < boundary) // 从左向右找第一个 >= boundary的数
         i++;
       if (i < j)
-        s[j--] = s[i];
-    }
-    s[i] = key;
-    print(s, 8);
-    quickSort(s, left, i - 1); // 递归调用
-    quickSort(s, i + 1, right);
+        arr[j--] = arr[i];
+    }// 此时 i == j; 且此位置空缺，把边界值填入；
+    arr[i] = boundary;
+    print(arr, 8);
+    quickSort(arr, left, i - 1); // 递归调用;边界值不进入下一轮;
+    quickSort(arr, i + 1, right);
   }
 }
 
