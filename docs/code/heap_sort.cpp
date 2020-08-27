@@ -1,127 +1,82 @@
-
+/*********************************************************
+    > File Name: heap.cpp
+    > Author: ims
+    > Created Time: Thu Aug 27 20:23:43 2020
+ *********************************************************/
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-static void heap_arrange(int arr[], int cur, int size);
- 
-static int heap_verify(int arr[], int size)
-{
-	int i;
-	for (i = 0; i < size / 2; ++i) {
-		int lhs = 2 * i + 1;
-		int rhs = 2 * i + 2;
- 
-		if (lhs < size && arr[i] > arr[lhs]) {
-			fprintf(stderr, "arr[%d]:%d > arr[%d]:%d\n", i, arr[i], lhs, arr[lhs]);
-			return -1;
-		}
-		if (rhs < size && arr[i] > arr[rhs]) {
-			fprintf(stderr, "arr[%d]:%d > arr[%d]:%d\n", i, arr[i], rhs, arr[rhs]);
-			return -1;
-		}
-	}
-	return 0;
+using namespace std;
+
+int heap_verify(int arr[], int size) {
+  for (int i = 0; i < size / 2; ++i) {
+    int lhs = 2 * i + 1;
+    int rhs = 2 * i + 2;
+
+    if (lhs < size && arr[i] > arr[lhs]) {
+      printf("arr[%d]:%d > arr[%d]:%d\n", i, arr[i], lhs, arr[lhs]);
+      return -1;
+    }
+    if (rhs < size && arr[i] > arr[rhs]) {
+      printf("arr[%d]:%d > arr[%d]:%d\n", i, arr[i], rhs, arr[rhs]);
+      return -1;
+    }
+  }
+  return 0;
 }
- 
-static void heap_print(int arr[], int size)
-{
-	int layer = 0, num = 0;
-	for (layer = 0; num < size; ++layer) {
-		int i = 0;
-		for (i = 0 ; i < (1 << layer) && num < size ; ++i)
-			printf("%3d ", arr[num++]);
-		printf("\n");
-	}
+
+static void heap_print(int arr[], int size) {
+  int num = 0;
+  for (int layer = 0; num < size; ++layer) {
+    for (int i = 0; i < (1 << layer) && num < size; ++i)
+      printf("%3d ", arr[num++]);
+    printf("\n");
+  }
 }
- 
-//  调整为小顶堆
-static void heap_arrange(int arr[], int cur, int size)  //调整为小顶堆
-{
- 
-	while (cur < size) {
-		int left = 2 * cur + 1;
-		int right = 2 * cur + 2;
-		int min = -1;
-		int min_val = arr[cur];
-		if (left < size && arr[left] < min_val) { //检查是否比左节点大
-			min = left;
-			min_val = arr[left];
-		}
-		if (right < size && arr[right] < min_val) {//检查是否比右节点大
-			min = right;
-			min_val = arr[right];
-		}
-		if (min == -1)
-		{
-			printf("当前点%d，左子树：%d,右子树%d.合理退出\n"  ,arr[cur],arr[left] ,arr[right]);
-			break;
-		}
-		int heaptop_val = arr[cur]; //堆顶的值
-		arr[cur] =min_val;
-		arr[min] = heaptop_val;
-		cur = min;
-		printf("交换%d\n",min_val);
-		heap_print(arr, size);
-	}
+
+void swap(int *a, int *b) {
+  int temp = *b;
+  *b = *a;
+  *a = temp;
 }
- 
-static void heap_sort(int arr[], int size)
-{
-	int i;
- 
- 
-	for (i = size / 2-1 ; i >= 0; --i) {
-		heap_arrange(arr, i, size);	//  建堆
-	}
-	printf("make heap:%d\n", i);
-	heap_print(arr, size);
-	assert(heap_verify(arr, size) == 0);
- 
-	for (i = size - 1; i > 0; --i) {
-		int tmp;
-		tmp = arr[0];
-		arr[0] = arr[i];
-		arr[i] = tmp;   //arr[i]<-->arr[size-1]
- 
-		printf("sort i=%d\n", i);
-		heap_print(arr, size);
-		heap_arrange(arr, 0, i);//建堆
-		heap_print(arr, size);
-		assert(heap_verify(arr, i) == 0);
-	}
-	printf("sorted:\n");
-	heap_print(arr, size);
+
+//build max heap
+void max_heapify(int arr[], int start, int end) {
+  //建立父节点指标和子节点指标
+  int dad = start;
+  int son = dad * 2 + 1;
+  while (son <= end) //若子节点指标在范围内才做比较
+  {
+    if (son + 1 <= end && arr[son] < arr[son + 1])
+      //先比较两个子节点大小，选择最大的
+      son++;
+    if (arr[dad] > arr[son]) //如果父节点大於子节点代表调整完毕，直接跳出函数
+      return;
+    else //否则交换父子内容再继续子节点和孙节点比较
+    {
+      swap(&arr[dad], &arr[son]);
+      dad = son;
+      son = dad * 2 + 1;
+    }
+  }
 }
-static int input(int **arr, int *size)
-{
-	int i;
-	int ret;
-	printf("输入变量个数:\n");
- 
-	ret = fscanf(stdin,  "%d", size);
-	//if (ret != 1)
-	//	return -1;
- 
-	printf("输入变量:\n");
-	*arr = (int *)malloc(sizeof(int) * (*size));
-	for (i = 0; i < *size; ++i) {
-		fscanf(stdin, "%d", &(*arr)[i]);
-	}
-	return 0;
+
+void heap_sort(int arr[], int len) {
+  //初始化，i从最後一个父节点开始调整
+  for (int i = len / 2 - 1; i >= 0; i--)
+    max_heapify(arr, i, len - 1);
+  //先将第一个元素和已排好元素前一位做交换，再重新调整，直到排序完毕
+  for (int i = len - 1; i > 0; i--) {
+    swap(&arr[0], &arr[i]);
+    max_heapify(arr, 0, i - 1);
+  }
 }
-int main(int argc, char *argv[])
-{
-	int *arr = NULL;
-	int size = 0;
-	int i;
- 
-	if (input(&arr, &size) < 0) {
-		fprintf(stderr, "input error\n");
-		return 0;
-	}
-	printf("origin:\n");
-	heap_print(arr, size);
- 
-	heap_sort(arr, size);
-	return 0;
+
+int main() {
+  int arr[] = {49, 38, 65, 97, 76, 13, 27};
+  const int len = sizeof(arr) / sizeof(int);
+  heap_print(arr, len);
+  heap_sort(arr, len);
+  heap_print(arr, len);
+  return 0;
 }

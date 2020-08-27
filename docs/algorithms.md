@@ -1,8 +1,14 @@
 # algorithms
 
+## sort
+### 排序是算法研究中最基础的问题
+
+时间复杂度在算法导论中统一是nlogn
+![avatar](dataStruct_pic/sort_sum.png)
+
 ## 字符串单模式匹配
 
-暴力算法BF算法，利用哈希值进行比较的RK算法，以及尽量减少比较次数的BM算法，
+暴力算法BF算法，利用哈希值进行比较的RK算法，以及尽量减少比较次数的BM算法
 
 ### [KMP 算法](https://baijiahao.baidu.com/s?id=1659735837100760934&wfr=spider&for=pc)
 

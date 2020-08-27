@@ -3,7 +3,6 @@ theme: readthedocs
 nav:
     - Home: index.md
     - DataStruct: dataStruct.md
-    - Sort: sort.md
     - Algorithms: algorithms.md
     - Database: database.md
     - Http: http.md
