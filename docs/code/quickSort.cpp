@@ -13,7 +13,7 @@ void quickSort(int arr[], int left, int right) {
     int i = left;
     int j = right;
     int boundary = arr[left];
-    printf("boundary:%d; ", boundary);
+    // printf("boundary:%d; ", boundary);
     while (i < j) {
       while (i < j && arr[j] >= boundary) // 从右向左找第一个 < boundary的数
         j--;
@@ -23,9 +23,9 @@ void quickSort(int arr[], int left, int right) {
         i++;
       if (i < j)
         arr[j--] = arr[i];
-    }// 此时 i == j; 且此位置空缺，把边界值填入；
+    } // 此时 i == j; 且此位置空缺，把边界值填入；
     arr[i] = boundary;
-    print(arr, 8);
+    // print(arr, 8);
     quickSort(arr, left, i - 1); // 递归调用;边界值不进入下一轮;
     quickSort(arr, i + 1, right);
   }
@@ -52,21 +52,10 @@ void select_sort(int v[], int len) // 2,选择排序,找出最小的放在最前
     int min = i;
     for (int j = i + 1; j < len; j++)
       min = v[min] > v[j] ? j : min;
-    v[i] = v[i] ^ v[min];
-    v[min] = v[i] ^ v[min];
-    v[i] = v[i] ^ v[min];
-  }
-}
 
-void insert(int V[], int len) // 3,插入排序
-{
-  for (int i = 1; i < len; i++) {
-    int end = V[i];
-    int j;
-    for (j = i - 1; end < V[j] && j >= 0;
-         j--) //找到合适位置之前把值依次向后移动。
-      V[j + 1] = V[j];
-    V[j + 1] = end;
+    int temp = v[i];
+    v[i] = v[min];
+    v[min] = temp;
   }
 }
 
@@ -171,7 +160,44 @@ void shell_sort(int a[], int n) {
   }
 }
 
-#define ARRAY 49, 38, 65, 97, 76, 13, 27, 49
+void insert(int V[], int len) {
+  for (int curOrderLen = 1; curOrderLen < len; curOrderLen++) {
+    int insertItem = V[curOrderLen];
+    int j = curOrderLen - 1; //是有序数组的最后一个元素
+    for (; insertItem < V[j] && j >= 0; j--)
+      V[j + 1] = V[j];
+    V[j + 1] = insertItem; //找到插入位置J+1,满足>= 前面，<后面
+  }
+}
+void insert_with_gap(int V[], int len, int gap) {
+  for (int curOrderLen = gap; curOrderLen < len; curOrderLen++) {
+    int insertItem = V[curOrderLen];
+    int j = curOrderLen - gap; //是有序数组的最后一个元素
+    for (; insertItem < V[j] && j >= 0; j -= gap)
+      V[j + gap] = V[j];
+    V[j + gap] = insertItem; //找到插入位置J+1,满足>= 前面，<后面
+  }
+}
+
+void shell_(int arr[], int n) {
+  for (int gap = n / 2; gap > 0; gap /= 2) { // gap: n/2 ~ 1
+    insert_with_gap(arr, n, gap);
+  }
+}
+void shell(int arr[], int n) {
+  for (int gap = n / 2; gap > 0; gap /= 2) { // gap: n/2 ~ 1
+    printf("\ngap%d\n", gap);
+
+    for (int i = gap; i < n; i++) { // 2
+      int j, insertItem = arr[i];
+      for (j = i - gap; j >= 0 && insertItem < arr[j]; j -= gap) {
+        arr[j + gap] = arr[j];
+      }
+      arr[j + gap] = insertItem;
+    }
+  }
+}
+#define ARRAY 49, 38, 65, 97, 76, 13, 27, 49, 1
 int main() {
   int arr[] = {ARRAY};
   const int len = sizeof(arr) / sizeof(int);
@@ -186,10 +212,12 @@ int main() {
   bubble(a1, len);
   print(a1, len);
 
+  puts("select_sort");
   int a2[] = {ARRAY};
   select_sort(a2, len);
   print(a2, len);
 
+  puts("insert");
   int a3[] = {ARRAY};
   insert(a3, len);
   print(a3, len);
@@ -202,7 +230,12 @@ int main() {
   radixsort(a6, len);
   print(a6, len);
 
+  puts("insert_with_gap");
+  int a8[] = {ARRAY};
+  insert_with_gap(a8, len, 1);
+  print(a8, len);
+
   int a7[] = {ARRAY};
-  shell_sort(a7, len);
+  shell_(a7, len);
   print(a7, len);
 }
