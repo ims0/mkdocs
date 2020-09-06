@@ -87,6 +87,7 @@ HTTP服务器至少应该实现GET和HEAD方法，其他方法都是可选的。
 
 最直观的区别就是GET把参数包含在URL中，POST通过request body传递参数。
 
+* 都包含请求头请求行，post多了请求body。
 * GET在浏览器回退时是无害的，而POST会再次提交请求。
 * GET产生的URL地址可以被Bookmark，而POST不可以。
 * GET请求会被浏览器主动cache，而POST不会，除非手动设置。
@@ -229,3 +230,22 @@ extern:
 504 （网关超时） 服务器作为网关或代理，但是没有及时从上游服务器收到请求。
 
 505 （HTTP 版本不受支持） 服务器不支持请求中所用的 HTTP 协议版本。
+
+## https
+
++ HTTP： 直接通过明文在浏览器和服务器之间传递信息。
++ HTTPS： 采用 对称加密 和 非对称加密 结合的方式来保护浏览器和服务端之间的通信安全。
+
+1. 对称加密算法使用起来简单快捷，密钥较短，且破译困难，除了数据加密标准（DES），另一个对称密钥加密系统是国际数据加密算法（IDEA），它比DES的加密性好，而且对计算机功能要求也没有那么高。IDEA加密标准由PGP（Pretty Good Privacy）系统使用。 常见的对称加密算法有DES、3DES、Blowfish、IDEA、RC4、RC5、RC6和AES 
+
+2. 非对称加密算法, [RSA原理--阮一峰](http://www.ruanyifeng.com/blog/2013/07/rsa_algorithm_part_two.html)
+
+![avatar](http_pic/https_proc.webp)
+
+### 为什么数据传输是用对称加密？
+首先：非对称加密的加解密效率是非常低的，而 http 的应用场景中通常端与端之间存在大量的交互，非对称加密的效率是无法接受的。
+另外：在 HTTPS 的场景中只有服务端保存了私钥，一对公私钥只能实现单向的加解密，所以 HTTPS 中内容传输加密采取的是对称加密，而不是非对称加密。
+
+
+
+## [WebSocket](http://www.52im.net/thread-331-1-1.html)

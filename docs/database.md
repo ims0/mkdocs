@@ -226,3 +226,6 @@ select id from t where name like ‘abc%’
     这类数据库想解决的问题就是传统数据库存在可扩展性上的缺陷，这类数据库可以适应数据量的增加以及数据结构的变化
 
 [关系型数据库和非关系型数据库](http://my.oschina.net/u/1773689/blog/364548)
+
+
+## [最全MySQL面试题和答案](https://www.cnblogs.com/lijiasnong/p/9963905.html)

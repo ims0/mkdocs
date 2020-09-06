@@ -178,7 +178,7 @@ void heap_sort(int arr[], int len) {
 
 
 ###  归并排序
-![avatar](dataStruct_pic/merge_sort.git)
+![avatar](dataStruct_pic/merge_sort.gif)
 
 ```
 void Merge(int arr[], int reg[], int start, int end) {
@@ -273,7 +273,15 @@ void radixsort(int data[], int n) //基数排序
 }
 ```
 
+### [计数排序](https://www.cnblogs.com/xiaochuan94/p/11198610.html)
+用辅助数组，计算每个元素出现的次数，在把计数数组展开到目的数组
 
+### [桶排序](https://www.cnblogs.com/bqwzx/p/11029264.html)
+
+当然桶排序更是对计数排序的改进，计数排序申请的额外空间跨度从最小元素值到最大元素值，若待排序集合中元素不是依次递增的，则必然有空间浪费情况。桶排序则是弱化了这种浪费情况，将最小值到最大值之间的每一个位置申请空间，更新为最小值到最大值之间每一个固定区域申请空间，尽量减少了元素值大小不连续情况下的空间浪费情况。
+
+作者：zhipingChen
+链接：https://www.jianshu.com/p/204ed43aec0c
 
 
 ## 字符串单模式匹配

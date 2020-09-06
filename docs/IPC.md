@@ -40,3 +40,13 @@ int mkfifo(const char *pathname, mode_t mode)
 
 `int socketpair(int domain, int type, int protocol, int sv[2]);`
 
+
+## 消息队列
+
+消息队列的作用？
+
+1. 程序解耦
+2. 数据冗余，例如rabbitmq的ack机制，消息确认机制
+3. 削峰能力
+4. 可恢复性，就算系统中部分组件挂掉，消息在队列也不丢失，待组件恢复后继续处理消息。
+5. 异步通信，如发红包，短信等流程丢入队列，可以优先级很低的去处理。
