@@ -10,7 +10,7 @@ nav:
     - IPC: IPC.md
     - linux: linux.md
     - DesignPattern : designPattern.md
-    - CMemoryCategory: cMemoryCategory.md
+    - CPP: cpp.md
     - CppVirtualFun: cppVirtualFun.md
     - Question: question.md
     - BackQuestion: back-end.md
