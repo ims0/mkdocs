@@ -1,7 +1,6 @@
 site_name: Ims Docs
 theme: readthedocs
 nav:
-    - Home: index.md
     - DataStruct: dataStruct.md
     - Algorithms: algorithms.md
     - Database: database.md
@@ -14,5 +13,4 @@ nav:
     - CppVirtualFun: cppVirtualFun.md
     - Question: question.md
     - BackQuestion: back-end.md
-    - About: about.md
 
