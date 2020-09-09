@@ -2,6 +2,32 @@
 
 # mysql
 
+## [最全MySQL面试题和答案](https://www.cnblogs.com/lijiasnong/p/9963905.html)
+
+## Mysql 的存储引擎:myisam和innodb的区别。
+
+1. MyISAM 是非事务的存储引擎，适合用于频繁查询的应用。表锁，不会出现死锁，适合小数据，小并发。
+   **MyISAM**：成熟、稳定、易于管理，快速读取。一些功能不支持（事务等），表级锁。
+2. innodb是支持事务的存储引擎，合于插入和更新操作比较多的应用，设计合理的话是行锁（最大区别就在锁的级别上），适合大数据，大并发。
+   **InnoDB**：支持事务、外键等特性、数据行锁定。空间占用大，不支持全文索引等。
+
+[Mysql数据库表的类型有哪些](https://blog.csdn.net/shaukon/article/details/85619719)
+
+答：Myslq一共向用户提供了包括DBD，HEAP，ISAM，MERFE，MyISAM，InnoDB以及Gemeni这7种Mysql表类型，其中DBD，InnoDB属于事物安全类表，而其他属于事物非安全类表。
+
+
+## mysql 查询过程
+![avatar](database_pic/mysql_lookup.png)
+
+1. 客户端发送一条查询给服务器
+2. 服务器先检查查询缓存(见下面注释),如果命中了缓存,则立刻返回存储在缓存中的结果.否则,进入下一个阶段
+3. 服务器进行SQL解析.预处理,再由优化器生成对应的执行计划.
+4. MySQL根据优化器生成的执行计划,调用存储引擎的API来执行查询.
+5. 将结果返回给客户端
+
+注释:
+查询缓存:在解析一个查询语句前,如果缓存是打开的,那么MySQL会优先检查这个查询是否命中查询缓存中的数据.如果没有命中,则进入下一阶段的处理.如果命中查询缓存,则会检查用户的权限,如果权限没有问题,MySQL会跳过其他阶段,直接拿数据返回给客户端.
+(摘自高性能mysql第三版)
 
 ## MYSQL 的事物处理
 ### 什么是事务
@@ -282,5 +308,3 @@ select id from t where name like ‘abc%’
 
 [关系型数据库和非关系型数据库](http://my.oschina.net/u/1773689/blog/364548)
 
-
-## [最全MySQL面试题和答案](https://www.cnblogs.com/lijiasnong/p/9963905.html)
