@@ -94,6 +94,81 @@ https://www.cnblogs.com/bakari/p/10748721.html
 ## df
 ## fdisk
 ## ifconfig
+
 ## uname
+
+```
+ -a, --all
+        print all information, in the following order, except omit -p and -i if unknown:
+
+ -s, --kernel-name
+        print the kernel name
+
+ -n, --nodename
+        print the network node hostname
+
+ -r, --kernel-release
+        print the kernel release
+
+ -v, --kernel-version
+        print the kernel version
+
+ -m, --machine
+        print the machine hardware name
+
+ -p, --processor
+        print the processor type (non-portable)
+
+ -i, --hardware-platform
+        print the hardware platform (non-portable)
+
+ -o, --operating-system
+        print the operating system
+
+```
+
 ## kill
 ## ipcs
+
+```
+ Resource options
+     -m, --shmems
+            Write information about active shared memory segments.
+
+     -q, --queues
+            Write information about active message queues.
+
+     -s, --semaphores
+            Write information about active semaphore sets.
+
+     -a, --all
+            Write information about all three resources (default).
+
+```
+
+### ipcrm 
+
+```
+  -a, --all [shm] [msg] [sem]
+         Remove  all resources.  When an option argument is provided, the removal is performed only for the specified resource types.  Warning!
+         Do not use -a if you are unsure how the software using the resources might react to missing objects.  Some programs create  these  re‐
+         sources at startup and may not have any code to deal with an unexpected disappearance.
+
+  -M, --shmem-key shmkey
+         Remove the shared memory segment created with shmkey after the last detach is performed.
+
+  -m, --shmem-id shmid
+         Remove the shared memory segment identified by shmid after the last detach is performed.
+
+  -Q, --queue-key msgkey
+         Remove the message queue created with msgkey.
+
+  -q, --queue-id msgid
+         Remove the message queue identified by msgid.
+
+  -S, --semaphore-key semkey
+         Remove the semaphore created with semkey.
+
+  -s, --semaphore-id semid
+         Remove the semaphore identified by semid.
+```
