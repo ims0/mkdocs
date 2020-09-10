@@ -1,6 +1,7 @@
 site_name: Ims Docs
 theme: readthedocs
 nav:
+    - Home: index.md
     - DataStruct: dataStruct.md
     - Algorithms: algorithms.md
     - Database: database.md
