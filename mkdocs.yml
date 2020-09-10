@@ -11,6 +11,5 @@ nav:
     - DesignPattern : designPattern.md
     - CPP: cpp.md
     - CppVirtualFun: cppVirtualFun.md
-    - Question: question.md
     - BackQuestion: back-end.md
 
