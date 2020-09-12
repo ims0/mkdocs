@@ -1,6 +1,6 @@
 [toc]
 
-#  
+#
 
 ## 进程
 
@@ -50,6 +50,8 @@ To get security info:
   ps axZ
   ps -eM
 ```
+### pstree
+以进程树的形式查看进程
 
 ### PROCESS STATE CODES         top
        Here are the different values that the s, stat and state output
@@ -82,6 +84,7 @@ To get security info:
 ## netstat
 
 ## lsof
+
 ## nc
 
 https://www.cnblogs.com/bakari/p/10898604.html
@@ -97,6 +100,7 @@ https://www.cnblogs.com/bakari/p/10748721.html
 
 ## uname
 
+常用 `uname -a`
 ```
  -a, --all
         print all information, in the following order, except omit -p and -i if unknown:
@@ -146,7 +150,7 @@ https://www.cnblogs.com/bakari/p/10748721.html
 
 ```
 
-### ipcrm 
+### ipcrm
 
 ```
   -a, --all [shm] [msg] [sem]
@@ -172,3 +176,66 @@ https://www.cnblogs.com/bakari/p/10748721.html
   -s, --semaphore-id semid
          Remove the semaphore identified by semid.
 ```
+
+## linux大小端问题
+
+1. Little-Endian就是低位字节排放在内存的低地址端，高位字节排放在内存的高地址端。
+2. Big-Endian就是高位字节排放在内存的低地址端，低位字节排放在内存的高地址端。
+
+举一个例子，比如数字高位在左边 0x12 34 56 78在内存中的表示形式为：
+
+1. 大端模式：高位也在左边，阅读顺序一致，高位低地址
+```
+低地址 -----------------> 高地址
+0x12  |  0x34  |  0x56  |  0x78
+```
+
+2. 小端模式：
+```
+低地址 ------------------> 高地址
+0x78  |  0x56  |  0x34  |  0x12
+```
+
+### 大端小端各自优势：
+1. 小端模式 ：强制转换数据不需要调整字节内容，1、2、4字节的存储方式一样。
+2. 大端模式 ：符号位的判定固定为第一个字节，容易判断正负。
+
+
+一般操作系统都是小端，而通讯协议是大端的。
+
+常见CPU的字节序
+Big Endian : PowerPC、IBM、Sun
+Little Endian : x86、DEC
+ARM既可以工作在大端模式，也可以工作在小端模式。
+```
+BOOL GetEndian()
+{
+    int a = 0x1234;
+    //通过将int强制类型转换成char单字节，通过判断起始存储位置。即等于 取b等于a的低地址部分
+    char b =  *(char *)&a;
+    if( b == 0x12)
+    {
+        return BigEndian;
+    }
+    return SmallEndian;
+}
+```
+联合体union的存放顺序是所有成员都从低地址开始存放，利用该特性可以轻松地获得了CPU对内存采用Little-endian还是Big-endian模式读写：
+```
+BOOL IsBigEndian()
+{
+    union NUM
+    {
+        int a;
+        char b;
+    }num;
+    num. a = 0x1234;
+    if( num. b == 0x12 )
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+```
+
+
