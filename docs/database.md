@@ -14,15 +14,29 @@
 [Mysql数据库表的类型有哪些](https://blog.csdn.net/shaukon/article/details/85619719)
 
 答：Myslq一共向用户提供了包括DBD，HEAP，ISAM，MERFE，MyISAM，InnoDB以及Gemeni这7种Mysql表类型，其中DBD，InnoDB属于事物安全类表，而其他属于事物非安全类表。
-
-### MySQL数据库作发布系统的存储，一天五万条以上的增量，预计运维三年,怎么优化？
+```
+mysql> show engines;
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |
+| BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |
+| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |
+| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |
+| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |
+| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |
+| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |
+| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |
+| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
++--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
+```
+## MySQL数据库设计步骤，注意事项
 1. 设计良好的数据库结构，允许部分数据冗余，尽量避免join查询，提高效率。
 2. 选择合适的表字段数据类型和存储引擎，适当的添加索引。
 3. mysql库主从读写分离。
 4. 找规律分表，减少单表中的数据量提高查询速度。
 5. 添加缓存机制，比如memcached，apc等。
-6. 不经常改动的页面，生成静态页面。
-7. 书写高效率的SQL。比如 SELECT * FROM TABEL 改为 SELECT field_1, field_2, field_3 FROM TABLE.
+6. 书写高效率的SQL。比如 SELECT * FROM TABEL 改为 SELECT field_1, field_2, field_3 FROM TABLE.
 
 ## char/varchar
 
@@ -197,6 +211,32 @@ MySQL索引的建立对于MySQL的高效运行是很重要的，索引可以大�
 即一个索引只包含单个列，一个表可以有多个单列索引，但这不是组合索引。
 + 复合索引
 即一个索引包含多个列。
+
+### 主键、外键和索引的区别？
+
+#### 定义：
+
+ 主键–唯一标识一条记录，不能有重复的，不允许为空
+
+ 外键–表的外键是另一表的主键, 外键可以有重复的, 可以是空值
+
+ 索引–该字段没有重复值，但可以有一个空值
+
+#### 作用：
+
+ 主键–用来保证数据完整性
+
+ 外键–用来和其他表建立联系用的
+
+ 索引–是提高查询排序的速度
+
+#### 个数：
+
+ 主键–主键只能有一个
+
+ 外键–一个表可以有多个外键
+
+ 索引–一个表可以有多个唯一索引
 
 ### 为何Mysql选择B+树
 
