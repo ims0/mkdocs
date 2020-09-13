@@ -69,6 +69,77 @@
 2. 互斥锁要么被锁住，要么被解开 （二值状态，类似二值信号量）
 3. 既然信号量有个与之关联的状态（它的计数值），那么信号量的挂出操作总是被记住。然而当一个条件变量发送信号时，所有没有线程等待在该条件变量上，那么该信号将消失。
 
+## 互斥锁
+
+互斥的概念
+在多线程编程中，引入了对象互斥锁的概念，来保证共享数据操作的完整性。 每个对象都对应于一个可称为" 互斥锁" 的标记，这个标记用来保证在任一时刻， 只能有一个线程访问该对象。
+
+互斥锁操作
+互斥锁也可以叫线程锁，接下来说说互斥锁的的使用方法。
+
+对互斥锁进行操作的函数，常用的有如下几个：
+```
+#include <pthread.h>
+
+int pthread_mutex_destroy(pthread_mutex_t *mutex);
+int pthread_mutex_init(pthread_mutex_t *restrict mutex, const pthread_mutexattr_t *restrict attr);
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int pthread_mutex_lock(pthread_mutex_t *mutex);
+int pthread_mutex_trylock(pthread_mutex_t *mutex);
+int pthread_mutex_unlock(pthread_mutex_t *mutex);
+int pthread_mutex_timedlock(pthread_mutex_t *restrict mutex, const struct timespec *restrict abs_timeout);
+```
+对线程锁进行操作的函数有很多，还包括许多线程锁属性的操作函数， 不过一般来说，对于并不复杂的情况， 只需要使用创建、获取锁、释放锁、删除锁这几个就足够了。
+
+
+### 非阻塞调用
+如果不想阻塞，而是想尝试获取一下，如果锁被占用咱就不用，如果没被占用那就用， 这该怎么实现呢？可以使用 pthread_mutex_trylock() 函数。 这个函数和 pthread_mutex_lock() 用法一样，只不过当请求的锁正在被占用的时候， 不会进入阻塞状态，而是立刻返回，并返回一个错误代码 EBUSY，意思是说， 有其它线程正在使用这个锁。
+```
+int err = pthread_mutex_trylock(&mtx);
+if(0 != err) {
+    if(EBUSY == err) {
+        //The mutex could not be acquired because it was already locked.
+    }
+}
+```
+### 超时调用
+如果不想不断的调用 pthread_mutex_trylock() 来测试互斥锁是否可用， 而是想阻塞调用，但是增加一个超时时间呢，那么可以使用 pthread_mutex_timedlock() 来解决， 其调用方式如下：
+```
+struct timespec abs_timeout;
+abs_timeout.tv_sec = time(NULL) + 1;
+abs_timeout.tv_nsec = 0;
+
+int err = pthread_mutex_timedlock(&mtx, &abs_timeout);
+if(0 != err) {
+    if(ETIMEDOUT == err) {
+        //The mutex could not be locked before the specified timeout expired.
+    }
+}
+``` 
+上面代码的意思是，阻塞等待线程锁，但是只等1秒钟，一秒钟后如果还没拿到锁的话， 那就返回，并返回一个错误代码 ETIMEDOUT，意思是超时了。
+
+
+## 条件变量
+### 初始化
+1. 条件变量和互斥锁一样，都有静态动态两种创建方式，静态方式使用PTHREAD_COND_INITIALIZER常量，如下：
+`pthread_cond_t cond=PTHREAD_COND_INITIALIZER`
+2. 动态方式调用pthread_cond_init()函数，API定义如下：
+`int pthread_cond_init(pthread_cond_t *cond, pthread_condattr_t *cond_attr)`
+
+### 等待
+```
+int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime)
+```
+
+   等待条件有两种方式：条件等待pthread_cond_wait()和计时等待pthread_cond_timedwait()，其中计时等待方式如果在给定时刻前条件没有满足，则返回ETIMEDOUT，结束等待，其中abstime以与time()系统调用相同意义的绝对时间形式出现，0表示格林尼治时间1970年1月1日0时0分0秒。
+
+  无论哪种等待方式，都必须和一个互斥锁配合，以防止多个线程同时请求pthread_cond_wait()（或pthread_cond_timedwait()，下同）的竞争条件（Race Condition）。mutex互斥锁必须是普通锁（PTHREAD_MUTEX_TIMED_NP）或者适应锁（PTHREAD_MUTEX_ADAPTIVE_NP），且在调用pthread_cond_wait()前必须由本线程加锁（pthread_mutex_lock()），而在更新条件等待队列以前，mutex保持锁定状态，并在线程挂起进入等待前解锁。在条件满足从而离开pthread_cond_wait()之前，mutex将被重新加锁，以与进入pthread_cond_wait()前的加锁动作对应。阻塞时处于解锁状态。
+
+### 激发
+
+条件有两种形式，pthread_cond_signal()激活一个等待该条件的线程，存在多个等待线程时按入队顺序激活其中一个；而pthread_cond_broadcast()则激活所有等待线程。
 
 ## 共享内存
 
