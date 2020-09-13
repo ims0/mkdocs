@@ -108,9 +108,11 @@ udp头比tcp多了报文长度字段，tcp的报文长度有ip头指定
 * 7）TCP还能提供流量控制，TCP连接的每一方都有一定大小的缓冲空间
 
 ### ACK延迟确认机制
-接收方在收到数据后，并不会立即回复ACK,而是延迟一定时间。一般ACK延迟发送的时间为200ms，但这个200ms并非收到数据后需要延迟的时间。系统有一个固定的定时器每隔200ms会来检查是否需要发送ACK包。这样做有两个目的。
-1、这样做的目的是ACK是可以合并的，也就是指如果连续收到两个TCP包，并不一定需要ACK两次，只要回复最终的ACK就可以了，可以降低网络流量。
-2、如果接收方有数据要发送，那么就会在发送数据的TCP数据包里，带上ACK信息。这样做，可以避免大量的ACK以一个单独的TCP包发送，减少了网络流量。
+接收方在收到数据后，并不会立即回复ACK,而是延迟一定时间。一般ACK延迟发送的时间为200ms，但这个200ms并非收到数据后需要延迟的时间。系统有一个固定的定时器每隔200ms会来检查是否需要发送ACK包。
+这样做有两个目的:
+
+1. 这样做的目的是ACK是可以合并的，也就是指如果连续收到两个TCP包，并不一定需要ACK两次，只要回复最终的ACK就可以了，可以降低网络流量。
+2. 如果接收方有数据要发送，那么就会在发送数据的TCP数据包里，带上ACK信息。这样做，可以避免大量的ACK以一个单独的TCP包发送，减少了网络流量。
 
 ### [TCP 四个计时器](https://blog.csdn.net/qq_33951180/article/details/60468267)
 
@@ -130,6 +132,18 @@ TCP中的四个计时器包括重传计时器、坚持计时器、保活计时�
 #### 4. 时间等待计时器(Time_Wait Timer)：
 
 时间等待计时器是在连接终止期间使用的。
+
+### [TCP的半关闭 与rsh](http://docs.52im.net/extend/docs/book/tcpip/vol1/18/)
+
+TCP提供了连接的一端在结束它的发送后还能接收来自另一端数据的能力。这就是所谓的半关闭。
+为了使用这个特性，编程接口必须为应用程序提供一种方式来说明“我已经完成了数据传送，因此发送一个文件结束（FIN）给另一端，但我还想接收另一端发来的数据，直到它给我发来文件结束（FIN）”.
+
+命令
+`sun % rsh bsdi sort < datafile`
+
++ 没有半关闭，需要其他的一些技术让客户通知服务器,客户端已经完成了它的数据传送，但仍要接收来自服务器的数据。
+
+
 
 -------------
 ### 3. 滑动窗口协议（也就是对包头中窗口字段的理解）
@@ -297,6 +311,60 @@ IP协议通过计算发现主机B与自己不在同一网段内，就直接交�
 
 ----
 
+## 网络编程
+
+### 设置socket为非阻塞non-blocking
+使用socket()创建的socket(file descriptor)，默认是阻塞的(blocking)；使用函数fcntl()(file control)可设置创建的socket为非阻塞的non-blocking。
+```
+#include <unistd.h>
+#include <fcntl.h>
+
+sock = socket(PF_INET, SOCK_STREAM, 0);
+
+int flags = fcntl(sock, F_GETFL, 0);
+fcntl(sock, F_SETFL, flags | O_NONBLOCK); 
+```
+
+### select
+```
+int select(int maxfdp,fd_set *readfds,fd_set *writefds,fd_set *errorfds,struct timeval *timeout);
+``` 
+1. int maxfdp是一个整数值，是指集合中所有文件描述符的范围，即所有文件描述符的最大值加1，不能错！
+在Windows中这个参数的值无所谓，可以设置不正确。 
+　　
+2. fd_set *readfds是指向fd_set结构的指针，这个集合中应该包括文件描述符，
+我们是要监视这些文件描述符的读变化的，即我们关心是否可以从这些文件中读取数据了，
+如果这个集合中有一个文件可读，select就会返回一个大于0的值，表示有文件可读，
+如果没有可读的文件，则根据timeout参数再判断是否超时，若超出timeout的时间，select返回0，
+若发生错误返回负值。可以传入NULL值，表示不关心任何文件的读变化。 
+　　
+3. fd_set *writefds是指向fd_set结构的指针。 
+　　
+4. fd_set *errorfds同上面两个参数的意图，用来监视文件错误异常。 
+　　
+struct timeval* timeout是select的超时时间，这个参数至关重要，它可以使select处于三种状态：
+第一，若将NULL以形参传入，即不传入时间结构，就是将select置于阻塞状态，一定等到监视文件描述符集合中某个文件描述符发生变化为止；
+第二，若将时间值设为0秒0毫秒，就变成一个纯粹的非阻塞函数，不管文件描述符是否有变化，都立刻返回继续执行，文件无变化返回0，有变化返回一个正值；
+第三，timeout的值大于0，这就是等待的超时时间，即 select在timeout时间内阻塞，超时时间之内有事件到来就返回了，否则在超时后不管怎样一定返回，返回值同上述。
+
+返回值： 
+
+负值：select错误; 正值：某些文件可读写或出错; 0：等待超时，没有可读写或错误的文件
+
+struct fd_set 是fd集合由宏来操作，
+
+1. 比如清空集合 FD_ZERO(fd_set *)，
+2. 将一个给定的文件描述符加入集合之中FD_SET(int ,fd_set *)，
+3. 将一个给定的文件描述符从集合中删除FD_CLR(int ,fd_set*)，
+4. 检查集合中指定的文件描述符是否可以读写FD_ISSET(int ,fd_set* )。
+
+connect():
+connect 可以立刻返回，根据返回值和 errno 处理三种情况：
+(1) 如果返回 0，表示 connect 成功。
+(2) 如果返回值小于 0， errno 为 EINPROGRESS,  表示连接
+      建立已经启动但是尚未完成。这是期望的结果，不是真正的错误。
+(3) 如果返回值小于0，errno 不是 EINPROGRESS，则连接出错了。
+
 ## 网络问题汇总
 
 [后台总结](https://www.cnblogs.com/liuzhi/p/4036840.html)
@@ -324,6 +392,14 @@ IP协议通过计算发现主机B与自己不在同一网段内，就直接交�
 如下图所示：主动关闭的那端 在发送ACK后会经历这个状态，该状态持续时间是最长分节生命期(maximum segment lifetime, MSL)的两倍，也称2MSL
 
 ![avatar](tcp_ip_pic/net_state_conv.png)
+
+#### 主动关闭方经历的状态有:
+1. `FIN_WAIT_1 --> TIME_WAIT ` :同时收到 FIN 与ACK
+2. `FIN_WAIT_1 --> CLOSING --> TIME_WAIT` :先收到 ACK,后收到 FIN, 被动方应该是先发了FIN后发ACK. 
+3. `FIN_WAIT_1 --> FIN_WAIT_2 --> TIME_WAIT` : 先收到ACK，后收到FIN
+
+#### 被动关闭方经历的状态有:
+1. `CLOSE_WAIT --> LAST_ACK --> CLOSED` 
 
 #### time_wait 存在的两个理由：
 1. 可靠的实现TCP全双工连接的终止。
