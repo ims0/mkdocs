@@ -1,4 +1,3 @@
-[toc]
 
 # mysql
 
@@ -132,14 +131,16 @@ MySQL的默认隔离级别就是:可重复读Repeatable read。
 
 ### 创建表
 ```
-CREATE TABLE runoob_tbl(
-    runoob_id INT NOT NULL AUTO_INCREMENT,
-    runoob_title VARCHAR(100) NOT NULL,
-    runoob_author VARCHAR(40) NOT NULL,
-    submission_date DATE,
-    PRIMARY KEY ( runoob_id )
-    )ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE test(
+    id INT NOT NULL AUTO_INCREMENT  PRIMARY KEY ,
+    title VARCHAR(100) NOT NULL,
+    author CHAR(20) NOT NULL,
+    submission_date DATE
+    )DEFAULT CHARSET=utf8;
 ```
++ 显示表信息命令: `show create table test`, 类似`desc`,只是前者按命令格式。
++ 修改表引擎的命令 : `alter table test engine = innodb;` 
+
 InnoDB 主键使用的是聚簇索引，MyISAM 不管是主键索引，还是二级索引使用的都是非聚簇索引
 
 ### 删除表
