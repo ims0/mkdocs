@@ -81,6 +81,38 @@ To get security info:
                     pthreads do)
                +    is in the foreground process group
 
+
+## objdump
+
+
+### objdump反汇编常用参数
+objdump -d <file(s)>: 将代码段反汇编；
+objdump -S <file(s)>: 将代码段反汇编的同时，将反汇编代码与源代码交替显示，编译时需要使用-g参数，即需要调试信息；
+objdump -C <file(s)>: 将C++符号名逆向解析
+objdump -l <file(s)>: 反汇编代码中插入文件名和行号
+objdump -j section <file(s)>: 仅反汇编指定的section
+
+### 显示main.c的汇编代码
+gcc -S -o main.s main.c
+
+
+### 目标文件反汇编
+gcc -c -o main.o main.c
+objdump -s -d main.o > main.o.txt
+
+## nm命令
+
+nm是names的缩写， nm命令主要是用来列出某些文件中的符号（说白了就是一些函数和全局变量等）
+
+语法格式
+nm [参数]
+常用选项：
+
+-A	每个符号前显示文件名
+-D	显示动态符号
+-g	仅显示外部符号
+-r	反序显示符号表
+
 ## netstat
 
 ## lsof

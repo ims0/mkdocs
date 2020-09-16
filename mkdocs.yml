@@ -10,7 +10,8 @@ nav:
     - IPC: IPC.md
     - linux: linux.md
     - DesignPattern : designPattern.md
-    - CPP: cpp.md
     - CppVirtualFun: cppVirtualFun.md
+    - CPP: cpp.md
+    - C: c.md
     - BackQuestion: back-end.md
 
