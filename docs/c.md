@@ -18,7 +18,7 @@ b = 2; mov ecx,dword ptr [esp+4]
 c = 3; mov edx,dword ptr [esp+8]
 printf("%d, %d, %d", a, b, c);//确保变量没有被常量替换
 ```
-#### 3. **顺序性** :
+#### 3. **顺序性** [编译有序，cpu可以乱序]:
 能够保证Volatile变量间的顺序性，编译器不会进行乱序优化。 
 
 1. C/C++ Volatile变量，与非Volatile变量之间的操作，是可能被编译器交换顺序的。

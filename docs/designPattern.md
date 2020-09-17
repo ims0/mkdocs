@@ -372,6 +372,9 @@ int main() {
 + 模板模式（Template Pattern）
 + 访问者模式（Visitor Pattern）
 
+#### 观察者模式
+当对象间存在一对多关系时，则使用观察者模式（Observer Pattern）。比如，当一个对象被修改时，则会自动通知依赖它的对象。观察者模式属于行为型模式。
+
 ### J2EE 模式
 
 这些设计模式特别关注表示层。这些模式是由 Sun Java Center 鉴定的。
