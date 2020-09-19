@@ -28,6 +28,16 @@ CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，vo
 4. 针对这个多线程的应用，真正正确的做法，是构建一个happens-before语义(Mutex、 Spinlock、 RWLock)。
 
 
+## 最小值宏写法；
+
+```
+#define MAX(x, y) ({
+typeof(x) _max1 = (x);
+typeof(y) _max2 = (y);
+(void) (&_max1 == &_max2);
+_max1 > _max2 ? _max1 : _max2; })
+```
+
 ### static
 
 + 控制变量的存储方式和可见性。

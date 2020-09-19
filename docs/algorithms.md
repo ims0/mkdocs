@@ -1,5 +1,37 @@
 # algorithms
 
+## 查找算法
+
+### 二叉查找(lgn)
+```
+int binarySearch(int arr[], int start, int end, int target) {
+  while (start <= end) { // 注意
+    int mid = (start + end) / 2;
+    if (arr[mid] == target)
+      return mid;
+    else if (arr[mid] < target)
+      start = mid + 1; // 注意
+    else if (arr[mid] > target)
+      end = mid - 1; // 注意
+  }
+  return -1;
+}
+
+int BinSearch(int a[], int start, int end, int val) {
+  if (start <= end) // 相等的情况返回，返回相等的值
+  {
+    int mid = (start + end) / 2;
+    if (a[mid] == val)
+      return mid;
+    else if (a[mid] > val)
+      return BinSearch(a, start, mid - 1, val);
+    else if (a[mid] < val)
+      return BinSearch(a, mid + 1, end, val);
+  }
+  return -1;
+}
+```
+
 ## [sort](https://zhuanlan.zhihu.com/p/124356219)
 
 排序是算法研究中最基础的问题
@@ -311,6 +343,29 @@ void radixsort(int data[], int n) //基数排序
 作者：zhipingChen
 链接：https://www.jianshu.com/p/204ed43aec0c
 
+
+##  判判断一个链表是否有环，如何找到这个环的起点
+给定一个单链表，只给出头指针h：
+
+1. 如何判断是否存在环？
+2. 如何知道环的长度？
+3. 如何找出环的连接点在哪里？
+4. 带环链表的长度是多少？
+
+### 解法：
+1. 问题1，使用追赶的方法，设定两个指针slow、fast，从头指针开始，每次分别前进1步、2步。如存在环，则两者相遇；如不存在环，fast遇到NULL退出。
+2. 问题2，记录下问题1的碰撞点p，slow从该点开始，再次回到该点所走过的操作数就是环的长度s。
+3. 问题3：有定理：碰撞点p到连接点的距离=头指针到连接点的距离，因此，分别从碰撞点、头指针开始走，相遇的那个点就是连接点。
+
+证明：slow指针到连接点的距离为x，相遇点到连接点的距离为y，圆的周长为L，
+前置条件：`x<L` 为了保证相遇时slow还没走一圈，
+slow 指针路程：s=x+y，fast指针路程等于`2s = 2(x+y) = x + L + y` 得到 `L=x+y`
+
+## 判断两个相交链表的交点
+
+
+
+4. 问题3中已经求出连接点距离头指针的长度，加上问题2中求出的环的长度，二者之和就是带环单链表的长度
 
 ## 字符串单模式匹配
 
