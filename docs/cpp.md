@@ -9,7 +9,33 @@ mutable的中文意思是“可变的，易变的”，跟constant（既C++中�
 在C++中，mutable也是为了突破const的限制而设置的。被mutable修饰的变量，将永远处于可变的状态，即使在一个const函数中。
 　　我们知道，如果类的成员函数不会改变对象的状态，那么这个成员函数一般会声明成const的。但是，有些时候，我们需要在const的函数里面修改一些跟类状态无关的数据成员，那么这个数据成员就应该被mutalbe来修饰。
 
-## this指针怎么传递
+## [this指针怎么传递](https://blog.csdn.net/xuruhua/article/details/80656580)
+### this指针的类型：
+类类型* const this指针并不是对象本身的一部分，不影响sizeof的结果 this的作用域在类”成员函数”的内部 this指针是”类成员函数”的第一个默认隐含参数，编译器自动维护 传递，类编写者不能显式传递 只有在类的非静态成员函数中才可以使用this指针，其它任何函数都 不可以
+```
+class Test {
+public:
+  void FunTest() {
+    cout << this << endl; //can be call when pt == NULL
+    //_data = 10;//segmentation fault when pt ==NULL
+  }
+  static void func() { cout << "static" << endl; }
+  int _data;
+};
+
+int main() {
+  Test t;
+  t.FunTest();//lea -0x14(%rbp),%rax; mov %rax,%rdi; callq <Test::FunTest()>
+  t.func(); //callq <Test::func()>;
+  Test *pt = &t; // lea -0x14(%rbp),%rax;mov  %rax,-0x10(%rbp)
+  pt->FunTest(); // //lea -0x14(%rbp),%rax; mov %rax,%rdi; callq <Test::FunTest()>
+  pt = NULL; //movq   $0x0,-0x10(%rbp)
+  cout << "pt:" << pt << endl;
+  pt->FunTest(); //mov  -0x10(%rbp),%rax; mov  %rax,%rdi; callq <Test::FunTest()>
+  return 0;
+}
+```
+
 
 ## 对象实例化问题
 

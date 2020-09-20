@@ -37,7 +37,62 @@ typeof(y) _max2 = (y);
 (void) (&_max1 == &_max2);
 _max1 > _max2 ? _max1 : _max2; })
 ```
+### offsetof
+offsetof 是一个宏，在 stddef.h 中定义
 
+`＃define offsetof(struct_t,member) ((size_t)(char *)&((struct_t *)0)->member)`
+
+
+## C程序内存分布
+![avatar](c_pic/memoryLayoutC.jpg)
+![avatar](c_pic/func_struct.png)
+
+![avatar](c_pic/main_call_f.png)
+ebp -4 可以拿到参数地址
+
+## [C可变参数](https://blog.csdn.net/xxxxxx91116/article/details/40478173)
+```
+void va_start(va_list ap, last);
+type va_arg(va_list ap, type);
+void va_end(va_list ap);
+void va_copy(va_list dest, va_list src);
+```
+
+va_list是用于存放参数列表的数据结构。
+va_start函数根据初始化last来初始化参数列表。
+va_arg函数用于从参数列表中取出一个参数，参数类型由type指定。
+va_copy函数用于复制参数列表。
+va_end函数执行清理参数列表的工作。
+引用自http://www.jb51.net/article/43192.htm
+上述函数通常用宏来实现，例如标准ANSI形式下，这些宏的定义是：
+```
+typedef char * va_list; //字符串指针
+#define _INTSIZEOF(n) ( (sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1) )
+#define va_start(ap,v) ( ap = (va_list)&v + _INTSIZEOF(v) )
+#define va_arg(ap,t) ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )
+#define va_end(ap) ( ap = (va_list)0 )
+```
+
+使用宏_INTSIZEOF是为了按照 int 型长度字节对齐指针，因为c调用协议下面，参数入栈都是整数字节（指针或者值）
+
+```
+int FindMax (int n, ...)
+{
+  int i,val,largest;
+  va_list vl;
+  va_start(vl,n);
+  largest=va_arg(vl,int);
+  for (i=1;i<n;i++)
+  {
+    val=va_arg(vl,int);
+    largest=(largest>val)?largest:val;
+  }
+  va_end(vl);
+  return largest;
+}
+```
+
+-------
 ### static
 
 + 控制变量的存储方式和可见性。
