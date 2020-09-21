@@ -19,7 +19,8 @@
 目的是:维护子进程信息，供父进程后续获取，信息包括（PID，终止状态，资源利用），有些UNIX的ps命令的COMMAND栏：以`<defunct>`表示僵尸进程，
 有些linux系统state栏，以`Z`表示僵尸进程。
 
-## ps
+## linux命令
+### ps
 
 To see every process on the system using standard syntax:
 ```
@@ -50,10 +51,10 @@ To get security info:
   ps axZ
   ps -eM
 ```
-### pstree
+#### pstree
 以进程树的形式查看进程
 
-### PROCESS STATE CODES         top
+#### PROCESS STATE CODES         top
        Here are the different values that the s, stat and state output
        specifiers (header "STAT" or "S") will display to describe the state
        of a process:
@@ -82,25 +83,29 @@ To get security info:
                +    is in the foreground process group
 
 
-## objdump
+#### top
+
+#### kill
+
+### objdump
 
 
-### objdump反汇编常用参数
+#### objdump反汇编常用参数
 objdump -d <file(s)>: 将代码段反汇编；
 objdump -S <file(s)>: 将代码段反汇编的同时，将反汇编代码与源代码交替显示，编译时需要使用-g参数，即需要调试信息；
 objdump -C <file(s)>: 将C++符号名逆向解析
 objdump -l <file(s)>: 反汇编代码中插入文件名和行号
 objdump -j section <file(s)>: 仅反汇编指定的section
 
-### 显示main.c的汇编代码
+#### 显示main.c的汇编代码
 gcc -S -o main.s main.c
 
 
-### 目标文件反汇编
+#### 目标文件反汇编
 gcc -c -o main.o main.c
 objdump -s -d main.o > main.o.txt
 
-## nm命令
+### nm命令
 
 nm是names的缩写， nm命令主要是用来列出某些文件中的符号（说白了就是一些函数和全局变量等）
 
@@ -113,24 +118,23 @@ nm [参数]
 -g	仅显示外部符号
 -r	反序显示符号表
 
-## netstat
+### netstat
 
-## lsof
+### lsof
 
-## nc
+### nc
 
 https://www.cnblogs.com/bakari/p/10898604.html
 
-## tcpdump
+### tcpdump
 
 https://www.cnblogs.com/bakari/p/10748721.html
 
-## top
-## df
-## fdisk
-## ifconfig
+### df
+### fdisk
+### ifconfig
 
-## uname
+### uname
 
 常用 `uname -a`
 ```
@@ -163,8 +167,7 @@ https://www.cnblogs.com/bakari/p/10748721.html
 
 ```
 
-## kill
-## ipcs
+### ipcs
 
 ```
  Resource options
@@ -182,7 +185,7 @@ https://www.cnblogs.com/bakari/p/10748721.html
 
 ```
 
-### ipcrm
+#### ipcrm
 
 ```
   -a, --all [shm] [msg] [sem]
@@ -271,3 +274,45 @@ BOOL IsBigEndian()
 ```
 
 
+## linux 网络编程
+
+
+### [络编程之listen函数](https://blog.csdn.net/godop/article/details/79894079)
+```
+SYNOPSIS
+       #include <sys/types.h>          /* See NOTES */
+       #include <sys/socket.h>
+
+       int listen(int sockfd, int backlog);
+DESCRIPTION
+       listen()  marks  the  socket  referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection re‐
+       quests using accept(2).
+
+       The sockfd argument is a file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET.
+
+       The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.  If a connection  request  arrives
+       when  the  queue  is full, the client may receive an error with an indication of ECONNREFUSED or, if the underlying protocol supports retransmis‐
+       sion, the request may be ignored so that a later reattempt at connection succeeds.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set appropriately.
+```
+
+![avatar](tcp_ip_pic/listen_func.png)
+![avatar](tcp_ip_pic/listen_queue.png)
+
+
+### recv/recvfrom/recvmsg
+
+```
+SYNOPSIS
+       #include <sys/types.h>
+       #include <sys/socket.h>
+
+       ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
+       ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                        struct sockaddr *src_addr, socklen_t *addrlen);
+
+       ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+```

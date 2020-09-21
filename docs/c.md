@@ -29,13 +29,21 @@ CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，vo
 
 
 ## 最小值宏写法；
+1. 临时变量消除副作用
+2. typeof()获取入参实际类型
+3. 取地址防止类型不一样
+4. 加void消除结果未使用高级
 
+(void)(&_x == &_y);可以产生的高级：
+comparison between distinct pointer types ‘int*’ and ‘unsigned int*’ lacks a cast
 ```
-#define MAX(x, y) ({
-typeof(x) _max1 = (x);
-typeof(y) _max2 = (y);
-(void) (&_max1 == &_max2);
-_max1 > _max2 ? _max1 : _max2; })
+#define max(x, y)                                                              \
+  ({                                                                           \
+    typeof(x) _x = (x);                                                        \
+    typeof(y) _y = (y);                                                        \
+    (void)(&_x == &_y);                                                        \
+    _x > _y ? _x : _y;                                                         \
+  })
 ```
 ### offsetof
 offsetof 是一个宏，在 stddef.h 中定义
