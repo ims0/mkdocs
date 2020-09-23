@@ -113,10 +113,10 @@ nm是names的缩写， nm命令主要是用来列出某些文件中的符号（�
 nm [参数]
 常用选项：
 
--A	每个符号前显示文件名
--D	显示动态符号
--g	仅显示外部符号
--r	反序显示符号表
+-A    每个符号前显示文件名
+-D    显示动态符号
+-g    仅显示外部符号
+-r    反序显示符号表
 
 ### netstat
 
@@ -316,3 +316,51 @@ SYNOPSIS
 
        ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
 ```
+
+## 内存泄漏排查
+
+### 一、重载new/delete操作符
+重载new/delete操作符，用list或者map记录对内存的使用情况。new一次，保存一个节点，delete一次，就删除节点。
+最后检测容器里是否还有节点，如果有节点就是有泄漏。也可以记录下哪一行代码分配的内存被泄漏。
+类似的方法：在每次调用new时加个打印，每次调用delete时也加个打印。
+### 二、使用mtrace/muntrace
+linux 提供mtrace/muntrace来检测程序是否有内存泄露。一般来说要检测哪一段代码是否有内存泄露，就可以用这一对函数包起来。
+
+每一对malloc-free的执行，若每一个malloc都有相应的free，则代表没有内存泄露，对于任何非malloc/free情況下所发生的内存泄露问题，mtrace并不能找出来。
+
+在使用mtrace之前，先要设置一个环境变量“MALLOC_TRACE”来指定mtrace检测结果的生成文件名。通过此文件就可以看出代码是否有内存泄露。
+```
+
+#include <mcheck.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+// int setenv(const char *name, const char *value, int overwrite);
+int main(void) {
+  setenv("MALLOC_TRACE", "./mtrace_output", 1);
+  mtrace();
+  int *p1 = (int *)malloc(10);
+  int *p2 = (int *)malloc(10);
+  printf("p1:%p\n",p1);
+  printf("p2:%p\n",p2);
+  free(p1);
+  muntrace();
+  return 0;
+}
+```
+运行test_mtrace，就会生成指定文件mtrace_output.此文件是一个txt类型。
+
+用mtrace命令分析mtrace的log文件：`mtrace [binary] mtrace_output`。
+就会将output_file_name的內容转化成能被理解的语句。
+
+### 三、查看进程maps表
+
+在实际调试过程中，怀疑某处发生了内存泄漏，可以查看该进程的maps表，看进程的堆或mmap段的虚拟地址空间是否持续增加。如果是，说明可能发生了内存泄漏。如果mmap段虚拟地址空间持续增加，还可以看到各个段的虚拟地址空间的大小，从而可以确定是申请了多大的内存。
+
+### 四、valgrind工具
+
+### [基于链表的C语言堆内存检测](https://blog.csdn.net/hanyin7/article/details/38377743)
+本文基于链表实现C语言堆内存的检测机制，可检测内存泄露、越界和重复释放等操作问题。
+本文仅提供即视代码层面的检测机制，不考虑编译链接级的注入或钩子。此外，该机制暂未考虑并发保护。
+
+
