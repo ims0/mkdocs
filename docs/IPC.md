@@ -27,6 +27,99 @@
 ## 消息队列
 
 消息队列具有随内核的持续性，一个进程发送完成退出，另一个进程再去读取。
+
+### Posix func
+
+#### mq_open 
+- open a message queue
+
+```
+mqd_t mq_open(const char *name, int oflag);
+mqd_t mq_open(const char *name, int oflag, mode_t mode, struct mq_attr *attr);
+```
+参数oflag必须被指定下面三个之一:
+```
+O_RDONLY  :接收消息
+O_WRONLY  :发送消息
+O_RDWR    :收发消息
+```
+下面是附加参数，or到oflag
+```
+O_CLOEXEC   :close-on-exec
+O_CREAT     :Create  the message queue if it does not exist.
+O_EXCL      :if name already exists, then fail with the error EEXIST.
+O_NONBLOCK  :Open the queue in nonblocking mode.
+```
+#### mq_send
+```
+#include <mqueue.h>
+int mq_send(mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio);
+
+#include <time.h>
+#include <mqueue.h>
+int mq_timedsend(mqd_t mqdes, const char *msg_ptr, size_t msg_len, unsigned int msg_prio,
+                     const struct timespec *abs_timeout);
+```
+
++ msg_len  
+    this length must be less than or equal to the queue's  mq_msgsize  attribute.  Zero-length messages are allowed.
++ msg_prio  
+    argument is a nonnegative integer that specifies the priority of this message.
+
+如果队列满的话，mqsend将会阻塞，如果设置为非阻塞，则立即返回 with the error EAGAIN.
+
+mq_timedsend() behaves just like mq_send(),如过没有使用 O_NONBLOCK 这个函数将会阻塞直到时间参数到期，如果队列满，且时间到期,mq_timedsend立即返回
+
+#### mq_receive
+```
+#include <mqueue.h>
+ssize_t mq_receive(mqd_t mqdes, char *msg_ptr,
+                      size_t msg_len, unsigned int *msg_prio);
+
+#include <time.h>
+#include <mqueue.h>
+ssize_t mq_timedreceive(mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio,
+                          const struct timespec *abs_timeout);
+```
++ 返回优先级最高到的最早的消息，
++ msg_prio 参数如果非NULL，则返回消息的优先级
++ 函数默认阻塞直到有消息到达，如过设置非阻塞，则立即返回with the error EAGAIN
++ mq_timedreceive() 如果时间到期没有消息到达，则返回
+
+
+#### mq_getattr/mq_setattr
+```
+#include <mqueue.h>
+int mq_getattr(mqd_t mqdes, struct mq_attr *attr);
+int mq_setattr(mqd_t mqdes, const struct mq_attr *newattr, struct mq_attr *oldattr);
+```
+
+mq_getattr() returns an mq_attr structure in the buffer pointed by attr.  This structure is defined as:
+```
+   struct mq_attr {
+       long mq_flags;       /* Flags: 0 or O_NONBLOCK */
+       long mq_maxmsg;      /* Max. # of messages on queue */
+       long mq_msgsize;     /* Max. message size (bytes) */
+       long mq_curmsgs;     /* # of messages currently in queue */
+   };
+```
++ mq_setattr唯一可以修改的字段是mq_flags，可选为阻塞或者非阻塞，其它属性在消息创建时指定，不能修改。
++ 如果 oldattr 不为NULL则返回旧属性类似mq_getattr()
+
+#### mq_unlink
+- remove a message queue
+```
+#include <mqueue.h>
+int mq_unlink(const char *name);
+```
+
+####  mq_close
+- close a message queue descriptor
+```
+#include <mqueue.h>
+       int mq_close(mqd_t mqdes);
+```
+
 ### posix与systemV消息队列的差异
 
 1. posix消息队列总是返回最高优先级的最早消息，SystemV消息队列可以返回任意指定优先级的消息
