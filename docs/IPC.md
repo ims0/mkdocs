@@ -120,6 +120,77 @@ int mq_unlink(const char *name);
        int mq_close(mqd_t mqdes);
 ```
 
+
+
+### SystemV func
+#### msgget
+returns the System V message queue identifier associated with the value of the key argument.  
+```
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+int msgget(key_t key, int msgflg);
+```
++ key 可以是IPC_PRIVATE ，或者是ftok(const char *pathname, int proj_id)返回值
++ msgflg 是读写权限值的组合，它可以与`IPC_CREAT and IPC_EXCL`按位或。
+
+#### msgsnd
+
+```
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
+```
++ msgp 是一个结构体指针，第一个字段是long类型的消息类型，后续字段自己定义 
+```
+typedef struct{
+    long msgtype;
+    char userdata[SIZE];
+}Message;
+
+```
++ msgsz 以字节为单位指定待发消息的大小,上述消息长度可以表示为：sizeof(Message) - sizeof(long)，
+
++ msgflg 参数可以是0，也可以是IPC_NOWAIT,IPC_NOWAIT 标志使得msgsnd调用非阻塞（如果没有存消息的空间，立马返回）
+
+#### msgrcv
+```
+size_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtype, int msgflg);
+```
++ msgp 参数指定所接收消息的存放位置，和msgsnd一样，指向紧挨着真正数据前的长整型字段。
++ msgsz 指向缓冲区大小，不包括长整型字段。
++ msgtype 指定希望读出消息的类型
+
++ if msgtype == 0 ,返回最早的消息
++ if msgtype > 0, 返回其类型值为type的第一个消息。
++ if msgtype < 0, 返回其类型值<= msgtype参数的绝对值的消息中类型值最小的第一个消息。
+
+#### msgctl
+
+```
+int msgctl(int msqid, int cmd, struct msqid_ds *buf);
+```
++ cmd 可取值：
+`IPC_STAT,IPC_SET,IPC_RMID,IPC_INFO,MSG_INFO,MSG_STAT,MSG_STAT_ANY`
+
++ buf 参数的结构
+
+```
+struct msqid_ds {
+   struct ipc_perm msg_perm;     /* Ownership and permissions */
+   time_t          msg_stime;    /* Time of last msgsnd(2) */
+   time_t          msg_rtime;    /* Time of last msgrcv(2) */
+   time_t          msg_ctime;    /* Time of last change */
+   unsigned long   __msg_cbytes; /* Current number of bytes in queue (nonstandard) */
+   msgqnum_t       msg_qnum;     /* Current number of messages in queue */
+   msglen_t        msg_qbytes;   /* Maximum number of bytes allowed in queue */
+   pid_t           msg_lspid;    /* PID of last msgsnd(2) */
+   pid_t           msg_lrpid;    /* PID of last msgrcv(2) */
+};
+```
+
+
 ### posix与systemV消息队列的差异
 
 1. posix消息队列总是返回最高优先级的最早消息，SystemV消息队列可以返回任意指定优先级的消息
