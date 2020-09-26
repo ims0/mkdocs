@@ -310,6 +310,81 @@ IP协议通过计算发现主机B与自己不在同一网段内，就直接交�
 
 
 ----
+## SOCKET
+### socket大致介绍
+  由于现在是面向对象的编程，一些计算机行业的大神通过抽象的理念，在现实中通过反复的理论或者实际的推导，提出了抽象的一些通信协议，基于tcp/ip协议，提出大致的构想，一些泛型的程序大牛在这个协议的基础上，将这些抽象化的理念接口化，针对协议提出的每个理念，专门的编写制定的接口，与其协议一一对应，形成了现在的socket标准规范，然后将其接口封装成可以调用的接口，供开发者使用
+![avatar](tcp_ip_pic/socket_site.png)
+![avatar](tcp_ip_pic/socket_process.png)
+
+
+### Socket Func
+#### socket
+```
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+int socket(int domain, int type, int protocol);
+```
++ domain:协议族， AF_INET/AF_INET6
++ type:类型， SOCK_STREAM/SOCK_DGRAM
++ protocol：协议,0自动选择，/etc/protocols
+
+#### bind
+
+```
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+```
++ 当我们调用socket创建一个socket时，返回的socket描述字它存在于协议族（address family，AF_XXX）空间中，但没有一个具体的地址。如果想要给它赋值一个地址，就必须调用bind()函数，否则就当调用connect()、listen()时系统会自动随机分配一个端口。
+
++ addr：一个const struct sockaddr *指针，指向要绑定给sockfd的协议地址。这个地址结构根据地址创建socket时的地址协议族的不同而不同
++ addrlen：对应的是地址的长度。
+
++ 通常服务器在启动的时候都会绑定一个众所周知的地址（如ip地址+端口号），用于提供服务，客户就可以通过它来接连服务器；而客户端就不用指定，有系统自动分配一个端口号和自身的ip地址组合。这就是为什么通常服务器端在listen之前会调用bind()，而客户端就不会调用，而是在connect()时由系统随机生成一个。
+
+
+
+#### listen 
+
+```
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+int listen(int sockfd, int backlog);
+```
+listen函数的第一个参数即为要监听的socket描述字，第二个参数为相应socket可以排队的最大连接个数。socket()函数创建的socket默认是一个主动类型的，listen函数将socket变为被动类型的，等待客户的连接请求。
+
+#### connect
+```
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+```
+connect函数的第一个参数即为客户端的socket描述字，第二参数为服务器的socket地址，第三个参数为socket地址的长度。客户端通过调用connect函数来建立与TCP服务器的连接。
+
+#### accept
+```
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+```
+当connect到达时候，accept中的fd变为可写，当三次握手完成，accept从监听队列中取出这个完成的fd，如果握手失败，协议会把这个fd从监听队列中删除，accept会继续阻塞。所以IO服用的服务端监听fd一般设置为非阻塞。
+
+#### 收发函数
+
+```
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, const void *buf, size_t count);
+ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+
+ssize_t sendto(int sockfd, const void *buf, size_t len, int flags,
+              const struct sockaddr *dest_addr, socklen_t addrlen);
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+                struct sockaddr *src_addr, socklen_t *addrlen);
+
+ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+```
+
+
+
+-----------------
 
 ## 网络编程
 
