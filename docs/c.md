@@ -27,7 +27,50 @@ printf("%d, %d, %d", a, b, c);//确保变量没有被常量替换
 CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，volatile对此无能为力,
 4. 针对这个多线程的应用，真正正确的做法，是构建一个happens-before语义(Mutex、 Spinlock、 RWLock)。
 
+## atomic_inc(&v)原子操作简述 
+ atomic_inc(&v)对变量v用锁定总线的单指令进行不可分解的"原子"级增量操作，避免v的值由于中断或多处理器同时操作造成不确定状态。
 
+ 原子操作需要硬件的支持，因此是架构相关的，其API和原子类型的定义都定义在内核源码树的include/asm/atomic.h文件中，它们都使用汇编语言实现，因为C语言并不能实现这样的操作。
+
+　　原子操作主要用于实现资源计数，很多引用计数(refcnt)就是通过原子操作实现的。原子类型定义如下：
+1
+`typedef struct { volatile int counter; } atomic_t;`
+
+　　volatile修饰字段告诉gcc不要对该类型的数据做优化处理，对它的访问都是对内存的访问，而不是对寄存器的访问。 
+
+### linux2.6.18之后删除了`<asm/atomic.h>`
+gcc 提供了内置的原子操作函数，更适合用户态的程序使用.
+gcc 4.1.2 起提供了__sync_*系列的built-in 函数，用于提供加减和逻辑运算的原子操作。
+[__sync_fetch_and_add系列](https://www.cnblogs.com/jiu0821/p/7269542.html)
+
+https://github.com/torvalds/linux.git
+```
+type __sync_fetch_and_add (type *ptr, type value);
+type __sync_fetch_and_sub (type *ptr, type value);
+type __sync_fetch_and_or (type *ptr, type value);
+type __sync_fetch_and_and (type *ptr, type value);
+type __sync_fetch_and_xor (type *ptr, type value);
+type __sync_fetch_and_nand (type *ptr, type value);
+type __sync_add_and_fetch (type *ptr, type value);
+type __sync_sub_and_fetch (type *ptr, type value);
+type __sync_or_and_fetch (type *ptr, type value);
+type __sync_and_and_fetch (type *ptr, type value);
+type __sync_xor_and_fetch (type *ptr, type value);
+type __sync_nand_and_fetch (type *ptr, type value);
+```
+```
+#include<stdio.h>
+#include<string.h>
+#include<stdlib.h>
+
+static int count =0;
+int main()
+{
+    __sync_fetch_and_add(&count,1);
+    printf("res:%d\n",count);
+}
+
+```
 ## 最小值宏写法；
 1. 临时变量消除副作用
 2. typeof()获取入参实际类型
