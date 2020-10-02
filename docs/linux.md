@@ -119,6 +119,8 @@ nm [参数]
 -r    反序显示符号表
 
 ### netstat
+#### 查询TCP各个状态的fd数量
+`netstat -ant|awk '/^tcp/ {++S[$NF]} END {for(a in S) print (a,S[a])}'`
 
 ### lsof
 

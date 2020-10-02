@@ -95,6 +95,7 @@ offsetof 是一个宏，在 stddef.h 中定义
 
 
 ## C程序内存分布
+![avatar](c_pic/exe-addr-area.png)
 ![avatar](c_pic/memoryLayoutC.jpg)
 ![avatar](c_pic/func_struct.png)
 

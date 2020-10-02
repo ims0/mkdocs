@@ -208,6 +208,132 @@ tcpdump 查看交互消息
 
 ![avatar](tcp_ip_pic/tcp_ip_interactive.JPG)
 
+### time_wait 产生的原因
+
+如下图所示：主动关闭的那端 在发送ACK后会经历这个状态，该状态持续时间是最长分节生命期(maximum segment lifetime, MSL)的两倍，也称2MSL
+
+![avatar](tcp_ip_pic/net_state_conv.png)
+
+#### 主动关闭方经历的状态有:
+1. `FIN_WAIT_1 --> TIME_WAIT ` :同时收到 FIN 与ACK
+2. `FIN_WAIT_1 --> CLOSING --> TIME_WAIT` :先收到 ACK,后收到 FIN, 被动方应该是先发了FIN后发ACK. 
+3. `FIN_WAIT_1 --> FIN_WAIT_2 --> TIME_WAIT` : 先收到ACK，后收到FIN
+
+#### 被动关闭方经历的状态有:
+1. `CLOSE_WAIT --> LAST_ACK --> CLOSED` 
+
+#### time_wait 存在的两个理由：
+1. 可靠的实现TCP全双工连接的终止。
+2. 允许老的重复分节在网络中消逝。
+
+详细解释：
+
+1. 防止上一次连接中的包，迷路后重新出现，影响新连接（经过2MSL，上一次连接中所有的重复包都会消失，Linux可以`cat /proc/sys/net/ipv4/tcp_fin_timeout`看这个值默认60））
+2. 可靠的关闭TCP连接 在主动关闭方发送的最后一个 ack(fin) ，有可能丢失，这时被动方会重新发 fin, 如果这时主动方处于 CLOSED 状态 ，就会响应 rst 而不是 ack。所以 主动方要处于 TIME_WAIT 状态，而不能是 CLOSED 
+
+#### 让每个TIME_WAIT早点过期,在linux上可以这么配置：
+
++ 让 **TIME_WAIT** 尽快回收，我也不知是多久，观察大概是一秒钟
+    `echo "1" > /proc/sys/net/ipv4/tcp_tw_recycle`
++ 让TIME_WAIT状态可以重用，这样即使TIME_WAIT占满了所有端口，也不会拒绝新的请求造成障碍
+    `echo "1" > /proc/sys/net/ipv4/tcp_tw_reuse`
+
+很多文档都会建议两个参数都配置上，但是我发现只用修改tcp_tw_recycle就可以解决问题的了，TIME_WAIT重用TCP协议本身就是不建议打开的。
+
+不能重用端口可能会造成系统的某些服务无法启动，比如要重启一个系统监控的软件，它用了40000端口，而这个端口在软件重启过程中刚好被使用了，就可能会重启失败的。linux默认考虑到了这个问题，有这么个设定：
+
++ 查看系统本地可用端口极限值
+    `cat /proc/sys/net/ipv4/ip_local_port_range`
+
+用这条命令会返回两个数字，默认是：32768 61000，说明这台机器本地能向外连接61000-32768=28232个连接，注意是本地向外连接，不是这台机器的所有连接，不会影响这台机器的80端口的对外连接数。但这个数字会影响到代理服务器（nginx）对app服务器的最大连接数，因为nginx对app是用的异步传输，所以这个环节的连接速度很快，所以堆积的连接就很少。
+
+### 什么情况下会有大量的time_wait
+
+在**高并发短连接的TCP服务器**上，当服务器处理完请求后立刻主动正常关闭连接。这个场景下会出现大量socket处于TIME_WAIT状态。
+
+### 怎么避免大量的time_wait
+
+查看time_wait数量
+`netstat -ant|awk '/^tcp/ {++S[$NF]} END {for(a in S) print (a,S[a])}'`
+
+#### 1.编辑内核文件/etc/sysctl.conf，加入以下内容：
+```
+net.ipv4.tcp_syncookies = 1 表示开启SYN Cookies。当出现SYN等待队列溢出时，启用cookies来处理，可防范少量SYN攻击，默认为0，表示关闭；
+net.ipv4.tcp_tw_reuse = 1 表示开启重用。允许将TIME-WAIT sockets重新用于新的TCP连接，默认为0，表示关闭；
+net.ipv4.tcp_tw_recycle = 1 表示开启TCP连接中TIME-WAIT sockets的快速回收，默认为0，表示关闭。
+net.ipv4.tcp_fin_timeout 修改系默认的 TIMEOUT 时间
+```
+
+然后执行 /sbin/sysctl -p 让参数生效.
+
+/etc/sysctl.conf是一个允许改变正在运行中的Linux系统的接口，它包含一些TCP/IP堆栈和虚拟内存系统的高级选项，修改内核参数永久生效。
+
+简单来说，就是打开系统的TIMEWAIT**重用和快速回收**。
+
+#### 2.如果以上配置调优后性能还不理想，可继续修改一下配置：
+```
+vi /etc/sysctl.conf
+net.ipv4.tcp_keepalive_time = 1200 
+#表示当keepalive起用的时候，TCP发送keepalive消息的频度。缺省是2小时，改为20分钟。
+net.ipv4.ip_local_port_range = 1024 65000 
+#表示用于向外连接的端口范围。缺省情况下很小：32768到61000，改为1024到65000。
+net.ipv4.tcp_max_syn_backlog = 8192 
+#表示SYN队列的长度，默认为1024，加大队列长度为8192，可以容纳更多等待连接的网络连接数。
+net.ipv4.tcp_max_tw_buckets = 5000 
+#表示系统同时保持TIME_WAIT套接字的最大数量，如果超过这个数字，TIME_WAIT套接字将立刻被清除并打印警告信息。
+默认为180000，改为5000。对于Apache、Nginx等服务器，上几行的参数可以很好地减少TIME_WAIT套接字数量，但是对于 Squid，
+效果却不大。此项参数可以控制TIME_WAIT套接字的最大数量，避免Squid服务器被大量的TIME_WAIT套接字拖死。
+
+```
+
+#### [tcp_tw_reuse、tcp_tw_recycle 使用场景及注意事项](https://www.cnblogs.com/lulu/p/4149312.html)
++ `tcp_tw_reuse 和 SO_REUSEADDR` 是两个完全不同的东西
+
+SO_REUSEADDR 允许同时绑定 127.0.0.1 和 0.0.0.0 同一个端口； SO_RESUSEPORT linux 3.7才支持，用于绑定相同ip:port，像nginx 那样 fork方式也能实现
+
+[tcp_tw_reuse - INTEGER](https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt)
+```	
+Enable reuse of TIME-WAIT sockets for new connections when it is
+	safe from protocol viewpoint.
+	0 - disable 	1 - global enable 	2 - enable for loopback traffic only
+	It should not be changed without advice/request of technical experts.
+	Default: 2
+```
+##### tcp_tw_reuse总结一下：
++ 1）tcp_tw_reuse选项和tcp_timestamps选项也必须同时打开；
++ 2）重用TIME_WAIT的条件是收到最后一个包后超过1s。
+
+[tcp_tw_recycle](https://blog.csdn.net/yunhua_lee/article/details/8146845)
+
+tcp_tw_recycle选项作用为：Enable fast recycling TIME-WAIT sockets. Default value is 0.
+tcp_timestamps选项作用为：Enable timestamps as defined in RFC1323. Default value is 1.
+
++ 1.tcp_tw_recycle和tcp_timestamps两个选项都打开的时候才进行快速回收
++ 2.计算快速回收的时间，等于 RTO * 3.5，回答第一个问题的关键是RTO（Retransmission Timeout）
++ 3.RTO最大是120s，最小是200ms
+
+##### tcp_tw_recycle总结一下：
++ 1）快速回收到底有多快？
+局域网环境下，700ms就回收；
++ 2）有的资料说只要打开tcp_tw_recycle即可，有的又说要tcp_timestamps同时打开，具体是哪个正确？
+需要同时打开，但默认情况下tcp_timestamps就是打开的，所以会有人说只要打开tcp_tw_recycle即可；
++ 3）为什么从虚拟机发起客户端连接时选项无效，非虚拟机连接就有效？
+和网络组网有关系，无法获取对端信息时就不进行快速回收；
+### 列举你所知道的tcp选项
+
+1.窗口扩大因子TCP Window Scale Option (WSopt)
+
+TCP窗口缩放选项是用来增加TCP接收窗口的大小而超过65536字节。
+
+2.SACK选择确认选项
+
+最大报文段长度（M S S）表示T C P传往另一端的最大块数据的长度。当建立一个连接时，每一方都有用于通告它期望接收的 M S S选项（M S S选项只能出现在S Y N报文段中）。通过MSS，应用数据被分割成TCP认为最适合发送的数据块，由TCP传递给IP的信息单位称为报文段或段(segment)。
+
+TCP通信时，如果发送序列中间某个数据包丢失，TCP会通过重传最后确认的包开始的后续包，这样原先已经正确传输的包也可能重复发送，急剧降低了TCP性能。为改善这种情况，发展出SACK(SelectiveAcknowledgment, 选择性确认)技术，使TCP只重新发送丢失的包，不用发送后续所有的包，而且提供相应机制使接收方能告诉发送方哪些数据丢失，哪些数据重发了，哪些数据已经提前收到等。
+
+3.MSS:Maxitum Segment Size 最大分段大小
+
+
 ## ICMP (Internet控制报文协议）
 
 ICMP（Internet Control Message Protocol）Internet控制报文协议。它是TCP/IP协议簇的一个子协议，用于在IP主机、路由器之间传递控制消息。控制消息是指网络通不通、主机是否可达、路由是否可用等网络本身的消息。这些控制消息虽然并不传输用户数据，但是对于用户数据的传递起着重要的作用。
@@ -462,60 +588,6 @@ connect 可以立刻返回，根据返回值和 errno 处理三种情况：
 
 ---
 
-### time_wait 产生的原因
-
-如下图所示：主动关闭的那端 在发送ACK后会经历这个状态，该状态持续时间是最长分节生命期(maximum segment lifetime, MSL)的两倍，也称2MSL
-
-![avatar](tcp_ip_pic/net_state_conv.png)
-
-#### 主动关闭方经历的状态有:
-1. `FIN_WAIT_1 --> TIME_WAIT ` :同时收到 FIN 与ACK
-2. `FIN_WAIT_1 --> CLOSING --> TIME_WAIT` :先收到 ACK,后收到 FIN, 被动方应该是先发了FIN后发ACK. 
-3. `FIN_WAIT_1 --> FIN_WAIT_2 --> TIME_WAIT` : 先收到ACK，后收到FIN
-
-#### 被动关闭方经历的状态有:
-1. `CLOSE_WAIT --> LAST_ACK --> CLOSED` 
-
-#### time_wait 存在的两个理由：
-1. 可靠的实现TCP全双工连接的终止。
-2. 允许老的重复分节在网络中消逝。
-
-详细解释：
-
-1. 防止上一次连接中的包，迷路后重新出现，影响新连接（经过2MSL，上一次连接中所有的重复包都会消失，Linux可以`cat /proc/sys/net/ipv4/tcp_fin_timeout`看这个值默认60））
-2. 可靠的关闭TCP连接 在主动关闭方发送的最后一个 ack(fin) ，有可能丢失，这时被动方会重新发 fin, 如果这时主动方处于 CLOSED 状态 ，就会响应 rst 而不是 ack。所以 主动方要处于 TIME_WAIT 状态，而不能是 CLOSED 
-
-#### 让每个TIME_WAIT早点过期,在linux上可以这么配置：
-
-+ 让 **TIME_WAIT** 尽快回收，我也不知是多久，观察大概是一秒钟
-    `echo "1" > /proc/sys/net/ipv4/tcp_tw_recycle`
-+ 让TIME_WAIT状态可以重用，这样即使TIME_WAIT占满了所有端口，也不会拒绝新的请求造成障碍
-    `echo "1" > /proc/sys/net/ipv4/tcp_tw_reuse`
-
-很多文档都会建议两个参数都配置上，但是我发现只用修改tcp_tw_recycle就可以解决问题的了，TIME_WAIT重用TCP协议本身就是不建议打开的。
-
-不能重用端口可能会造成系统的某些服务无法启动，比如要重启一个系统监控的软件，它用了40000端口，而这个端口在软件重启过程中刚好被使用了，就可能会重启失败的。linux默认考虑到了这个问题，有这么个设定：
-
-+ 查看系统本地可用端口极限值
-    `cat /proc/sys/net/ipv4/ip_local_port_range`
-
-用这条命令会返回两个数字，默认是：32768 61000，说明这台机器本地能向外连接61000-32768=28232个连接，注意是本地向外连接，不是这台机器的所有连接，不会影响这台机器的80端口的对外连接数。但这个数字会影响到代理服务器（nginx）对app服务器的最大连接数，因为nginx对app是用的异步传输，所以这个环节的连接速度很快，所以堆积的连接就很少。
-
-
-
-### 列举你所知道的tcp选项
-
-1.窗口扩大因子TCP Window Scale Option (WSopt)
-
-TCP窗口缩放选项是用来增加TCP接收窗口的大小而超过65536字节。
-
-2.SACK选择确认选项
-
-最大报文段长度（M S S）表示T C P传往另一端的最大块数据的长度。当建立一个连接时，每一方都有用于通告它期望接收的 M S S选项（M S S选项只能出现在S Y N报文段中）。通过MSS，应用数据被分割成TCP认为最适合发送的数据块，由TCP传递给IP的信息单位称为报文段或段(segment)。
-
-TCP通信时，如果发送序列中间某个数据包丢失，TCP会通过重传最后确认的包开始的后续包，这样原先已经正确传输的包也可能重复发送，急剧降低了TCP性能。为改善这种情况，发展出SACK(SelectiveAcknowledgment, 选择性确认)技术，使TCP只重新发送丢失的包，不用发送后续所有的包，而且提供相应机制使接收方能告诉发送方哪些数据丢失，哪些数据重发了，哪些数据已经提前收到等。
-
-3.MSS:Maxitum Segment Size 最大分段大小
 
 ### connect会阻塞，怎么解决?(必考必问)
 

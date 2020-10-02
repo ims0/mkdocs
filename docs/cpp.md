@@ -31,7 +31,14 @@ class Super
     virtual void SomeMethod() final;
 };
 ```
+### explicit
 
+首先, C++中的explicit关键字只能用于修饰只有一个参数的类构造函数, 它的作用是表明该构造函数是显示的, 而非隐式的, 跟它相对应的另一个关键字是implicit, 意思是隐藏的,类构造函数默认情况下即声明为implicit(隐式).
+
+explicit关键字的作用就是防止类构造函数的隐式自动转换.
+
+上面也已经说过了, explicit关键字只对有一个参数的类构造函数有效, 如果类构造函数参数大于或等于两个时, 是不会产生隐式转换的, 所以explicit关键字也就无效了
+但是, 也有一个例外, 就是当除了第一个参数以外的其他参数都有默认值的时候, explicit关键字依然有效, 此时, 当调用构造函数时只传入一个参数, 等效于只有一个参数的类构造函数, 
 
 ## [this指针怎么传递](https://blog.csdn.net/xuruhua/article/details/80656580)
 ### this指针的类型：
