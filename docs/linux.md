@@ -124,9 +124,57 @@ nm [参数]
 
 ### lsof
 
+
+`lsof -i:2007`
+
+----
+
 ### nc
 
 https://www.cnblogs.com/bakari/p/10898604.html
+
+#### usage
+```
+usage: nc [-46CDdFhklNnrStUuvZz] [-I length] [-i interval] [-M ttl]
+      [-m minttl] [-O length] [-P proxy_username] [-p source_port]
+      [-q seconds] [-s source] [-T keyword] [-V rtable] [-W recvlimit] [-w timeout]
+      [-X proxy_protocol] [-x proxy_address[:port]]       [destination] [port]
+```
+
+注：目的ip和端口在命令的最后，不加选项(-p 指定源端口可省略)。
+#### 常用选项：
+
+    -4：只使用 IPv4 地址
+    -6：只使用 IPv6 地址
+    -l：启动本地监听
+    -n：不使用 DNS 解析
+    -p：指定源端口
+    -s：指定源 IP 地址
+    -u：使用 UDP，默认是 TCP
+    -v：显示详细信息
+    -w：设定超时时间（只适合用在 Client 端）
+    -d：禁止从标准输入读取数据，也就是客户端输入数据不会发送到服务端
+    -k：让服务端保持连接，不断开
+
+#### 建立 C/S 聊天室#
+
+nc 的本质是在两台机器之间建立连接，之后就可以基于这个连接做很多事情，数据传输是其中一个最为基本的。我们下面就使用 nc 来建立一个 C/S 的聊天室。
+
++ 模拟 Server 端：
+```
+# -v ：输出详细信息
+# -l ：指定监听地址和端口
+nc -v -l 127.0.0.1 6000
+```
++ 模拟 Client 端：
+```
+# -p : 指定源端口
+nc -v -p 5000 localhost 6000
+```
+之后，Client 和 Server 端就可以相互聊天了。
+
+
+-------------
 
 ### tcpdump
 

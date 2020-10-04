@@ -220,7 +220,7 @@ type-id 必须是一个指针、引用、算术类型、函数针或者成员指
 
 ```
 struct Base{
-    //Base()=default;
+    //Base()=default; //显式要求生成默认构造函数,否则存在其它构造函数时不生成。
     Base(int a):a_(a){}
     int a_;
 };
