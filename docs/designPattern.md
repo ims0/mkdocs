@@ -13,7 +13,7 @@
 + 行为型模式（Behavioral Patterns）
 
 [23种设计模式总结](https://www.cnblogs.com/tongkey/p/7170826.html)
-### 创建型模式
+## 创建型模式
 
 这些设计模式提供了一种在创建对象的同时隐藏创建逻辑的方式，而不是使用 new 运算符直接实例化对象。这使得程序在判断针对某个给定实例需要创建哪些对象时更加灵活。
 
@@ -23,7 +23,7 @@
 + 建造者模式（Builder Pattern）
 + 原型模式（Prototype Pattern）
 
-#### 工厂模式
+### 工厂模式
 
 工厂模式一般分为三种：简单工厂模式、工厂方法模式、抽象工厂模式。
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 
 
 ```
-#### 工厂方法模式：
+### 工厂方法模式：
 
 简述：工厂类改为抽象类，由子类负责创建。
 
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 }
 ```
 
-#### 抽象工厂：
+### 抽象工厂：
 
 在上面的工厂方法模式基础上，有需要生产高配版的奔驰和宝马，那工厂方法模式就有点鞭长莫及了，这就又有抽象工厂模式
 
@@ -240,9 +240,9 @@ int main(int argc, char **argv) {
 
 ```
 
-#### 单例模式
+### 单例模式
 
-##### 饿汉模式
+#### 饿汉模式
 
 是指单例实例在程序运行时被立即执行初始化:
 这种模式的问题也很明显, 类现在是多态的, 但静态成员变量初始化顺序还是没保证.
@@ -273,7 +273,7 @@ int main() {
 
 ```
 
-##### 懒汉模式(堆-粗糙版)
+#### 懒汉模式(堆-粗糙版)
 
 (堆-粗糙版): 单例实例只在第一次被使用时进行初始化:
 
@@ -305,10 +305,79 @@ int main() {
   HeapObj::Instance()->Print();
   return 0;
 }
-
 ```
 
-##### 懒汉模式 (局部静态变量-最佳版)o
+#### 懒汉模式(堆-线程安全模式)
+解决了线程安全与释放问题。
+
++ singleton.h
+```
+#include <boost/noncopyable.hpp>
+#include <pthread.h>
+#include <stdio.h>
+template<typename T>
+struct has_no_destroy
+{
+  template <typename C> static char test(decltype(&C::no_destroy));
+  template <typename C> static int32_t test(...);
+  const static bool value = sizeof(test<T>(0)) == 1;
+};
+
+template <class T> class Singleton : boost ::noncopyable {
+public:
+  static T &instance() {
+    pthread_once(&ponce_, &Singleton::init);
+    return *value_;
+  }
+
+private:
+  Singleton<T>() = delete;
+  ~Singleton<T>() = delete;
+  static void init() {
+    value_ = new T();
+    if (!has_no_destroy<T>::value) {
+      ::atexit(destroy);
+    }
+  }
+  static void destroy() {
+    delete value_;
+    value_ = NULL;
+    puts("has delete!");
+  }
+
+  static pthread_once_t ponce_;
+  static T *value_;
+};
+// template static var can be place at header
+template <typename T> pthread_once_t Singleton<T>::ponce_ = PTHREAD_ONCE_INIT;
+template <typename T> T *Singleton<T>::value_ = nullptr;
+
+class NonTemplate {
+  static int a;
+};
+// int NonTemplate::a=1; //multiple definition of `NonTemplate::a';
+```
++ test.cpp
+
+```
+#include "singleton.h"
+
+class Base {
+public:
+  int a;
+private:
+  friend class Singleton<Base>;
+  Base() = default;
+};
+int main() {
+  Base &base = Singleton<Base>::instance();
+  base.a = 1;
+  return 0;
+}
+```
+
+
+#### 懒汉模式 (局部静态变量-最佳版)
 
 在 Instance() 函数内定义局部静态变量的好处是, theLog 的构造函数只会在第一次调用Instance() 时被初始化, 达到了和 "堆栈版" 相同的动态初始化效果, 保证了成员变量和 Singleton 本身的初始化顺序.
 
@@ -344,8 +413,7 @@ int main() {
 ```
 
 
-
-### 结构型模式
+## 结构型模式
 这些设计模式关注类和对象的组合。继承的概念被用来组合接口和定义组合对象获得新功能的方式。
 
 + 适配器模式（Adapter Pattern）
@@ -357,7 +425,7 @@ int main() {
 + 享元模式（Flyweight Pattern）
 + 代理模式（Proxy Pattern）
 
-### 行为型模式
+## 行为型模式
 这些设计模式特别关注对象之间的通信。
 
 + 责任链模式（Chain of Responsibility Pattern）
@@ -373,10 +441,10 @@ int main() {
 + 模板模式（Template Pattern）
 + 访问者模式（Visitor Pattern）
 
-#### 观察者模式
+### 观察者模式
 当对象间存在一对多关系时，则使用观察者模式（Observer Pattern）。比如，当一个对象被修改时，则会自动通知依赖它的对象。观察者模式属于行为型模式。
 
-### J2EE 模式
+## J2EE 模式
 
 这些设计模式特别关注表示层。这些模式是由 Sun Java Center 鉴定的。
 
