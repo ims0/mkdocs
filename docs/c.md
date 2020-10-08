@@ -2,7 +2,7 @@
 
 ##关键字作用解释：
 ### volatile(易变的，不可优化的，顺序性)
-
+volatile 多出现在处理硬件的程序中，它的值由程序控制之外的过程控制，如系统时钟定时更新的变量，对象的值可能在程序的控制外改变。遇到这个关键字声明的变量，编译器对访问该变量的代码就不再进行优化，从而可以提供对特殊地址的稳定访问
 #### 1. **易变性**: 
 所谓的易变性，在汇编层面反映出来，就是两条语句，下一条语句不会直接使用上一条语句对应的volatile变量的寄存器内容，而是重新从内存中读取。
 ```
@@ -45,13 +45,13 @@ gcc 4.1.2 起提供了__sync_*系列的built-in 函数，用于提供加减和�
 
 https://github.com/torvalds/linux.git
 ```
-type __sync_fetch_and_add (type *ptr, type value);
+type __sync_fetch_and_add (type *ptr, type value); // 先fetch，然后自加; i++
 type __sync_fetch_and_sub (type *ptr, type value);
 type __sync_fetch_and_or (type *ptr, type value);
 type __sync_fetch_and_and (type *ptr, type value);
 type __sync_fetch_and_xor (type *ptr, type value);
 type __sync_fetch_and_nand (type *ptr, type value);
-type __sync_add_and_fetch (type *ptr, type value);
+type __sync_add_and_fetch (type *ptr, type value);// 先add，然后fetch; ++i
 type __sync_sub_and_fetch (type *ptr, type value);
 type __sync_or_and_fetch (type *ptr, type value);
 type __sync_and_and_fetch (type *ptr, type value);
@@ -77,7 +77,7 @@ int main()
 3. 取地址防止类型不一样
 4. 加void消除结果未使用高级
 
-(void)(&_x == &_y);可以产生的高级：
+(void)(&_x == &_y);可以产生的warning：
 comparison between distinct pointer types ‘int*’ and ‘unsigned int*’ lacks a cast
 ```
 #define max(x, y)                                                              \
@@ -277,7 +277,7 @@ size -- 内存块的大小，以字节为单位。
 #### 返回值
 该函数返回一个指针 ，指向已分配大小的内存。如果请求失败，则返回 NULL。
 
-### [mprotect](https://www.cnblogs.com/ims-/p/13222243.html)
+### [mprotect](https://www.cnblogs.com/ims-/p/13222243.html) 修改内存区的保护属性
 
 ```
 #include <unistd.h>
@@ -285,3 +285,10 @@ size -- 内存块的大小，以字节为单位。
 int mprotect(const void *start, size_t len, int prot);
 void *memalign(size_t alignment, size_t size)
 ```
+mprotect()函数把自start开始的、长度为len的内存区的保护属性修改为prot指定的值。
+prot可以取以下几个值，并且可以用“|”将几个属性合起来使用：
+
+* 1）PROT_READ：表示内存段内的内容可写；
+* 2）PROT_WRITE：表示内存段内的内容可读；
+* 3）PROT_EXEC：表示内存段中的内容可执行；
+* 4）PROT_NONE：表示内存段中的内容根本没法访问。
