@@ -19,6 +19,103 @@
 目的是:维护子进程信息，供父进程后续获取，信息包括（PID，终止状态，资源利用），有些UNIX的ps命令的COMMAND栏：以`<defunct>`表示僵尸进程，
 有些linux系统state栏，以`Z`表示僵尸进程。
 
+
+## 协程
+协程是一种用户态的轻量级线程。本篇主要研究协程的C/C++的实现。
+首先我们可以看看有哪些语言已经具备协程语义：
+
+* 比较重量级的有C#、erlang、golang*
+* 轻量级有python、lua、javascript、ruby
+* 还有函数式的scala、scheme等。
+
+c/c++不直接支持协程语义，但有不少开源的协程库，如：
+
+*  Protothreads：[一个“蝇量级” C 语言协程库](https://coolshell.cn/articles/10975.html)
+*  libco:[来自腾讯的开源协程库libco介绍](https://www.cnblogs.com/bangerlee/p/4003160.html)，官网
+*  coroutine:[云风的一个C语言同步协程库](https://github.com/cloudwu/coroutine/),[详细信息](https://blog.codingnow.com/2012/07/c_coroutine.html)
+
+ 目前看到大概有四种实现协程的方式：
+
+* 第一种：利用glibc 的 ucontext组件(云风的库)
+* 第二种：使用汇编代码来切换上下文[实现c协程](https://www.cnblogs.com/sniperHW/archive/2012/06/19/2554574.html)
+* 第三种：利用C语言语法switch-case的奇淫技巧来实现（Protothreads)
+* 第四种：利用了 C 语言的 setjmp 和 longjmp（ [一种协程的 C/C++ 实现](https://www.cnblogs.com/Pony279/p/3903048.html),要求函数里面使用 static local 的变量来保存协程内部的数据）
+
+### 使用ucontext来实现简单的协程库
+利用ucontext提供的四个函数getcontext(),setcontext(),makecontext(),swapcontext()可以在一个进程中实现用户级的线程切换。
+
+ 本节我们先来看ucontext实现的一个简单的例子：
+```
+#include <stdio.h>
+#include <ucontext.h>
+#include <unistd.h>
+ 
+int main(int argc, const char *argv[]){
+    ucontext_t context;
+ 
+    getcontext(&context);
+    puts("Hello world");
+    sleep(1);
+    setcontext(&context);
+    return 0;
+}
+```
+想想程序运行的结果会是什么样？
+```
+cxy@ubuntu:~$ ./example 
+Hello world
+Hello world
+Hello world
+Hello world
+^C
+cxy@ubuntu:~$
+```
+上面是程序执行的部分输出，不知道是否和你想得一样呢？我们可以看到，程序在输出第一个“Hello world"后并没有退出程序，而是持续不断的输出”Hello world“。其实是程序通过getcontext先保存了一个上下文,然后输出"Hello world",在通过setcontext恢复到getcontext的地方，重新执行代码，所以导致程序不断的输出”Hello world“，在我这个菜鸟的眼里，这简直就是一个神奇的跳转。
+
+那么问题来了，ucontext到底是什么？
+
+### ucontext组件到底是什么
+ 在类System V环境中,在头文件< ucontext.h > 中定义了两个结构类型，mcontext_t和ucontext_t和四个函数getcontext(),setcontext(),makecontext(),swapcontext().利用它们可以在一个进程中实现用户级的线程切换。
+
+mcontext_t类型与机器相关，并且不透明.ucontext_t结构体则至少拥有以下几个域:
+```
+           typedef struct ucontext {
+               struct ucontext *uc_link;
+               sigset_t         uc_sigmask;
+               stack_t          uc_stack;
+               mcontext_t       uc_mcontext;
+               ...
+           } ucontext_t;
+```
+ 当当前上下文(如使用makecontext创建的上下文）运行终止时系统会恢复uc_link指向的上下文；uc_sigmask为该上下文中的阻塞信号集合；uc_stack为该上下文中使用的栈；uc_mcontext保存的上下文的特定机器表示，包括调用线程的特定寄存器等。
+
+ 下面详细介绍四个函数：
+
+`int getcontext(ucontext_t *ucp);`
+
+ 初始化ucp结构体，将当前的上下文保存到ucp中
+
+`int setcontext(const ucontext_t *ucp);`
+
+ 设置当前的上下文为ucp，setcontext的上下文ucp应该通过getcontext或者makecontext取得，如果调用成功则不返回。如果上下文是通过调用getcontext()取得,程序会继续执行这个调用。如果上下文是通过调用makecontext取得,程序会调用makecontext函数的第二个参数指向的函数，如果func函数返回,则恢复makecontext第一个参数指向的上下文第一个参数指向的上下文context_t中指向的uc_link.如果uc_link为NULL,则线程退出。
+
+`void makecontext(ucontext_t *ucp, void (*func)(), int argc, ...);`
+
+ makecontext修改通过getcontext取得的上下文ucp(这意味着调用makecontext前必须先调用getcontext)。然后给该上下文指定一个栈空间ucp->stack，设置后继的上下文ucp->uc_link.
+
+ 当上下文通过setcontext或者swapcontext激活后，执行func函数，argc为func的参数个数，后面是func的参数序列。当func执行返回后，继承的上下文被激活，如果继承上下文为NULL时，线程退出。
+
+`int swapcontext(ucontext_t *oucp, ucontext_t *ucp);`
+
+保存当前上下文到oucp结构体中，然后激活upc上下文。 
+
+如果执行成功，getcontext返回0，setcontext和swapcontext不返回；如果执行失败，getcontext,setcontext,swapcontext返回-1，并设置对于的errno.
+
+简单说来，  `getcontext`获取当前上下文，`setcontext`设置当前上下文，`swapcontext`切换上下文，`makecontext`创建一个新的上下文。
+
+
+--------
+
 ## linux命令
 ### ps
 

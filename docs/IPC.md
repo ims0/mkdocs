@@ -309,7 +309,9 @@ int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const s
 
 由于数据传递不涉及内核，所以共享内存是IPC中速度最快的，存取数据需要各种形式的同步:互斥锁，条件变量，读写锁，记录锁，信号量。
 
-### mmap,munmap,msync
+###  posix ShareMem
+
+mmap,munmap,msync
 
 mmap函数把一个文件或一个Posix共享内存区对象映射到调用进程的地址空间，使用函数三个目的:
 
@@ -324,7 +326,25 @@ Posix共享内存构筑在mmap函数之上，首先指定一个Posix IPC名字�
 
 ### SystemV共享内存
 
-类似Posix共享内存，先调shmget,再调shmat
+[共享内存使用常见陷阱与分析](https://blog.csdn.net/killmice/article/details/41516399)
+
+#### 共享内存系统范围最大值
+在一个linux服务器上，共享内存的总体大小是有限制的，这个大小通过SHMMAX参数来定义（以字节为单位），您可以通过执行以下命令来确定 SHMMAX 的值：
+
+` cat /proc/sys/kernel/shmmax`
+linux 64 default: 18446744073692774399
+#### 系统范围内共享内存段的最大数量
+` cat /proc/sys/kernel/shmmni`
+linux 64 default: 4096 
+
+#### SHMALL
+
+最后，我们来看 SHMALL 共享内存内核参数。该参数控制着系统一次可以使用的共享内存总量（以页为单位）。简言之，该参数的值始终应该至少为：
+ceil(SHMMAX/PAGE_SIZE)
+
+`cat /proc/sys/kernel/shmall` ubuntu64 default: 18446744073692774399
+
+
 
 #### shmget
 
@@ -333,9 +353,6 @@ Posix共享内存构筑在mmap函数之上，首先指定一个Posix IPC名字�
 #### shmat
 
 把共享内存附接到调用进程的地址空间
-
-
-
 
 
 
