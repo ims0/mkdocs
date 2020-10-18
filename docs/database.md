@@ -69,9 +69,9 @@ COMMIT;
 ### 事务的隔离级别
 数据库事务的隔离级别有4个，由低到高依次为Read uncommitted(未授权读取、读未提交)、Read committed（授权读取、读提交）、Repeatable read（可重复读取）、Serializable（序列化），这四个级别可以逐个解决脏读、不可重复读、幻象读这几类问题。
 
-#### Read uncommitted(未授权读取、读未提交)： 
+#### Read uncommitted(读未提交)： 
 如果一个事务已经开始写数据，则另外一个事务则不允许同时进行写操作，但允许其他事务读此行数据。该隔离级别可以通过“排他写锁”实现。这样就避免了更新丢失，却可能出现脏读。也就是说事务B读取到了事务A未提交的数据。
-#### Read committed（授权读取、读提交）： 
+#### Read committed（读提交）： 
 读取数据的事务允许其他事务继续访问该行数据，但是未提交的写事务将会禁止其他事务访问该行。该隔离级别避免了脏读，但是却可能出现不可重复读。事务A事先读取了数据，事务B紧接了更新了数据，并提交了事务，而事务A再次读取该数据时，数据已经发生了改变。
 #### **Repeatable read**（可重复读取）： 
 [MySQL可重复读隔离级别的实现原理](https://www.cnblogs.com/lmj612/p/10598971.html)
@@ -113,6 +113,87 @@ id   | name |   create_version |   delete_version
 隔离级别越高，越能保证数据的完整性和一致性，但是对并发性能的影响也越大。对于多数应用程序，可以优先考虑把数据库系统的隔离级别设为Read Committed。它能够避免脏读取，而且具有较好的并发性能。尽管它会导致不可重复读、幻读和第二类丢失更新这些并发问题，在可能出现这类问题的个别场合，可以由应用程序采用悲观锁或乐观锁来控制。大多数数据库的默认级别就是Read committed，比如Sql Server , Oracle。
 
 MySQL的默认隔离级别就是:可重复读Repeatable read。
+
+### [幻读](https://segmentfault.com/a/1190000016566788?utm_source=tag-newest)
+
+<table>
+<thead><tr>
+<th>级别</th>
+<th>symbol</th>
+<th>值</th>
+<th>描述</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>读未提交</td>
+<td>READ-UNCOMMITTED</td>
+<td>0</td>
+<td>存在脏读、不可重复读、幻读的问题</td>
+</tr>
+<tr>
+<td>读已提交</td>
+<td>READ-COMMITTED</td>
+<td>1</td>
+<td>解决脏读的问题，存在不可重复读、幻读的问题</td>
+</tr>
+<tr>
+<td>可重复读</td>
+<td>REPEATABLE-READ</td>
+<td>2</td>
+<td>mysql 默认级别，解决脏读、不可重复读的问题，存在幻读的问题。使用 MMVC机制 实现可重复读</td>
+</tr>
+<tr>
+<td>序列化</td>
+<td>SERIALIZABLE</td>
+<td>3</td>
+<td>解决脏读、不可重复读、幻读，可保证事务安全，但完全串行执行，性能最低</td>
+</tr>
+</tbody>
+</table>
+<p>我们可以通过以下命令 查看/设置 全局/会话 的事务隔离级别</p>
+```
+mysql> SELECT @@global.tx_isolation, @@tx_isolation;
+```
+#### 定义
+幻读，并不是说两次读取获取的结果集不同，幻读侧重的方面是某一次的 select 操作得到的结果所表征的数据状态无法支撑后续的业务操作。更为具体一些：select 某记录是否存在，不存在，准备插入此记录，但执行 insert 时发现此记录已存在，无法插入，此时就发生了幻读
+
+* 这里给出 mysql 幻读的比较形象的场景
+1. T1 ：主事务，检测表中是否有 id 为 1 的记录，没有则插入，这是我们期望的正常业务逻辑
+2. T2 ：干扰事务，目的在于扰乱 T1 的正常的事务执行。
+```
+step1 T1: SELECT * FROM `users` WHERE `id` = 1;
+step2 T2: INSERT INTO `users` VALUES (1, 'big cat');
+step3 T1: INSERT INTO `users` VALUES (1, 'big cat');
+step4 T1: SELECT * FROM `users` WHERE `id` = 1;
+```
+
+![avatar](database_pic/幻读1.png)
+![avatar](database_pic/幻读2.png)
+<p>T1 ：主事务，检测表中是否有 id 为 1 的记录，没有则插入，这是我们期望的正常业务逻辑。</p>
+<p>T2 ：干扰事务，目的在于扰乱 T1 的正常的事务执行。</p>
+<p>在 RR 隔离级别下，step1、step2 是会正常执行的，step3 则会报错主键冲突，对于 T1 的业务来说是执行失败的，这里 T1 就是发生了<strong>幻读</strong>，因为 T1 在 step1 中读取的数据状态并不能支撑后续的业务操作，T1：“见鬼了，我刚才读到的结果应该可以支持我这样操作才对啊，为什么现在不可以”。T1 不敢相信的又执行了 step4，发现和 setp1 读取的结果是一样的（RR下的 MMVC机制）。此时，幻读无疑已经发生，T1 无论读取多少次，都查不到 id = 1 的记录，但它的确无法插入这条他通过读取来认定不存在的记录（此数据已被T2插入），对于 T1 来说，它幻读了。</p>
+<p>其实 RR 也是可以避免幻读的，通过对 select 操作手动加 行X锁（SELECT ... FOR UPDATE 这也正是 SERIALIZABLE 隔离级别下会隐式为你做的事情），同时还需要知道，即便当前记录不存在，比如 id = 1 是不存在的，当前事务也会获得一把记录锁（因为InnoDB的行锁锁定的是索引，故记录实体存在与否没关系，存在就加 行X锁，不存在就加 next-key lock间隙X锁），其他事务则无法插入此索引的记录，故杜绝了幻读。</p>
+<p>在 SERIALIZABLE 隔离级别下，step1 执行时是会隐式的添加 行(X)锁 / gap(X)锁的，从而 step2 会被阻塞，step3 会正常执行，待 T1 提交后，T2 才能继续执行（主键冲突执行失败），对于 T1 来说业务是正确的，成功的阻塞扼杀了扰乱业务的T2，对于T1来说他前期读取的结果是可以支撑其后续业务的。</p>
+<p>所以 mysql 的幻读并非什么读取两次返回结果集不同，而是事务在插入事先检测不存在的记录时，惊奇的发现这些数据已经存在了，之前的检测读获取到的数据如同鬼影一般。</p>
+<p>这里要灵活的理解读取的意思，第一次select是读取，第二次的 insert 其实也属于隐式的读取，只不过是在 mysql 的机制中读取的，插入数据也是要先读取一下有没有主键冲突才能决定是否执行插入。</p>
+<p>不可重复读侧重表达 读-读，幻读则是说 读-写，用写来证实读的是鬼影。</p>
+
+
+#### RR级别下防止幻读
+<p>RR级别下只要对 SELECT 操作也手动加行（X）锁即可类似 SERIALIZABLE 级别（它会对 SELECT 隐式加锁），即大家熟知的：</p>
+
+这里需要用 X锁， 用 LOCK IN SHARE MODE 拿到 S锁 后我们没办法做 写操作
+
+`SELECT `id` FROM `users` WHERE `id` = 1 FOR UPDATE;`
+p>如果 id = 1 的记录存在则会被加行（X）锁，如果不存在，则会加 next-lock key / gap 锁（范围行锁），即记录存在与否，mysql 都会对记录应该对应的索引加锁，其他事务是无法再获得做操作的。</p>
+<p>这里我们就展示下 id = 1 的记录不存在的场景，FOR UPDATE 也会对此 “记录” 加锁，要明白，InnoDB 的行锁（gap锁是范围行锁，一样的）锁定的是记录所对应的索引，且聚簇索引同记录是直接关系在一起的。</p>
+<blockquote>id = 1 的记录不存在，开始执行事务：<br>step1: T1 查询 id = 1 的记录并对其加 X锁<br>step2: T2 插入 id = 1 的记录，被阻塞<br>step3: T1 插入 id = 1 的记录，成功执行（T2 依然被阻塞中），T1 提交（T2 唤醒但主键冲突执行错误）</blockquote>
+<blockquote>T1事务符合业务需求成功执行，T2干扰T1失败。
+![avatar](database_pic/幻读加锁.png)
+
+
+
+
 
 
 -----------------------------
