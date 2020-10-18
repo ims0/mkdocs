@@ -1,14 +1,8 @@
-
 # mysql
 
-## [最全MySQL面试题和答案](https://www.cnblogs.com/lijiasnong/p/9963905.html)
+[doc:Storage Engines Feature Summary](https://dev.mysql.com/doc/refman/5.7/en/storage-engines.html)
 
-## Mysql 的存储引擎:myisam和innodb的区别。
-
-1. MyISAM 是非事务的存储引擎，适合用于频繁查询的应用。表锁，不会出现死锁，适合小数据，小并发。
-   **MyISAM**：成熟、稳定、易于管理，快速读取。一些功能不支持（事务等），表级锁。
-2. innodb是支持事务的存储引擎，合于插入和更新操作比较多的应用，设计合理的话是行锁（最大区别就在锁的级别上），适合大数据，大并发。
-   **InnoDB**：支持事务、外键等特性、数据行锁定。空间占用大，不支持全文索引等。
+## Mysql Storage Engine
 
 [Mysql数据库表的类型有哪些](https://blog.csdn.net/shaukon/article/details/85619719)
 
@@ -29,44 +23,17 @@ mysql> show engines;
 | CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |
 +--------------------+---------+----------------------------------------------------------------+--------------+------+------------+
 ```
-## MySQL数据库设计步骤，注意事项
-1. 设计良好的数据库结构，允许部分数据冗余，尽量避免join查询，提高效率。
-2. 选择合适的表字段数据类型和存储引擎，适当的添加索引。
-3. mysql库主从读写分离。
-4. 找规律分表，减少单表中的数据量提高查询速度。
-5. 添加缓存机制，比如memcached，apc等。
-6. 书写高效率的SQL。比如 SELECT * FROM TABEL 改为 SELECT field_1, field_2, field_3 FROM TABLE.
+### myisam和innodb的区别
 
-## char/varchar
+1. MyISAM 是非事务的存储引擎，适合用于频繁查询的应用。表锁，不会出现死锁，适合小数据，小并发。
+   **MyISAM**：成熟、稳定、易于管理，快速读取。一些功能不支持（事务等），表级锁。
+2. innodb是支持事务的存储引擎，合于插入和更新操作比较多的应用，设计合理的话是行锁（最大区别就在锁的级别上），适合大数据，大并发。
+   **InnoDB**：支持事务、外键等特性、数据行锁定。空间占用大，不支持全文索引等。
 
-char 是一种固定长度的类型，varchar则是一种可变长度的类型，
-它们的区别是：
-char(M)类型的数据列里，每个值都占用M个字节，如果某个长度小于M，MySQL就会在它的右边用空格字符补足．（在检索操作中那些填补出来的空格字符将被去掉）在varchar(M)类型的数据列里，每个值只占用刚好够用的字节再加上一个用来记录其长度的字节（即总长度为L+1字节）．  
 
-varchar适用场景:
+## mysql Transactions
+![avatar](database_pic/mysql-acid.jpg)
 
-字符串列得最大长度比平均长度大很多 2.字符串很少被更新，容易产生存储碎片 3.使用多字节字符集存储字符串
-
-Char场景:
-
-存储具有近似得长度（md5值,身份证，手机号）,长度比较短小得字符串（因为varchar需要额外空间记录字符串长度），更适合经常更新得字符串，更新时不会出现页分裂得情况，避免出现存储碎片，获得更好的io性能
-
-## mysql 查询过程
-![avatar](database_pic/mysql_lookup.png)
-
-1. 客户端发送一条查询给服务器
-2. 服务器先检查查询缓存(见下面注释),如果命中了缓存,则立刻返回存储在缓存中的结果.否则,进入下一个阶段
-3. 服务器进行SQL解析.预处理,再由优化器生成对应的执行计划.
-4. MySQL根据优化器生成的执行计划,调用存储引擎的API来执行查询.
-5. 将结果返回给客户端
-
-注释:
-查询缓存:在解析一个查询语句前,如果缓存是打开的,那么MySQL会优先检查这个查询是否命中查询缓存中的数据.如果没有命中,则进入下一阶段的处理.如果命中查询缓存,则会检查用户的权限,如果权限没有问题,MySQL会跳过其他阶段,直接拿数据返回给客户端.
-(摘自高性能mysql第三版)
-
-### [MySQL查询分析器EXPLAIN或DESC用法](https://blog.csdn.net/helloxiaozhe/article/details/79951354) 
-
-## MYSQL 的事物处理
 ### 什么是事务
 
 MySQL 事务主要用于处理操作量大，复杂度高的数据。比如说，在人员管理系统中，你删除一个人员，你即需要删除人员的基本资料，也要删除和该人员相关的信息，如信箱，文章等等，这样，这些数据库操作语句就构成一个事务！
@@ -77,9 +44,9 @@ MySQL 事务主要用于处理操作量大，复杂度高的数据。比如说�
 
 ### 事务是必须满足4个条件（ACID）
 
-原子性（Atomicity，或称不可分割性）、一致性（Consistency）、隔离性（Isolation，又称独立性）、持久性（Durability）。
+原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）。
 
-+ **原子性**：一个事务（transaction）中的所有操作，要么全部完成，要么全部不完成，不会结束在中间某个环节。事务在执行过程中发生错误，会被回滚（Rollback）到事务开始前的状态，就像这个事务从来没有执行过一样。
++ **原子性**：一个事务中的所有操作，要么全部完成，要么全部不完成，不会结束在中间某个环节。事务在执行过程中发生错误，会被回滚（Rollback）到事务开始前的状态，就像这个事务从来没有执行过一样。
 
 + **一致性**：在事务开始之前和事务结束以后，数据库的完整性没有被破坏。这表示写入的资料必须完全符合所有的预设规则，这包含资料的精确度、串联性以及后续数据库可以自发性地完成预定的工作。
 
@@ -87,17 +54,17 @@ MySQL 事务主要用于处理操作量大，复杂度高的数据。比如说�
 
 + **持久性**：事务处理结束后，对数据的修改就是永久的，即便系统故障也不会丢失。
 
-### MYSQL 事务处理主要有两种方法：
-#### 1、用 BEGIN, ROLLBACK, COMMIT来实现
+### MYSQL 事务处理命令
+1、用 BEGIN, ROLLBACK, COMMIT来实现
+```
+BEGIN;
+ROLLBACK;
+COMMIT;
+```
+因为 MySQL 默认使用 autocommit 模式，也就是说，当执行一个更新操作后，MySQL 会立刻将结果进行提交。
+手动测试事务要关闭自动提交(sql语句：`set autocommit=0`)
 
-BEGIN 开始一个事务
-ROLLBACK 事务回滚
-COMMIT 事务确认
 
-#### 2、直接用 SET 来改变 MySQL 的自动提交模式:
-
-SET AUTOCOMMIT=0 禁止自动提交
-SET AUTOCOMMIT=1 开启自动提交
 
 ### 事务的隔离级别
 数据库事务的隔离级别有4个，由低到高依次为Read uncommitted(未授权读取、读未提交)、Read committed（授权读取、读提交）、Repeatable read（可重复读取）、Serializable（序列化），这四个级别可以逐个解决脏读、不可重复读、幻象读这几类问题。
@@ -149,6 +116,158 @@ MySQL的默认隔离级别就是:可重复读Repeatable read。
 
 
 -----------------------------
+
+## [mysql 锁](https://dev.mysql.com/doc/refman/5.7/en/innodb-locking.html)
+![avatar](database_pic/mysql-lock.jpg)
+[mysql lock on bili](https://www.bilibili.com/video/BV1x54y1979n?from=search&seid=7051544205933286059)
+
+* Shared and Exclusive Locks
+* Intention Locks
+* Record Locks
+* Gap Locks
+* Next-Key Locks
+* Insert Intention Locks
+* AUTO-INC Locks
+
+Predicate Locks for Spatial Indexes
+### Shared and Exclusive Locks
+InnoDB 通过共享锁和排他锁两种方式实现了标准的行锁。
+
+1. 共享锁(S 锁)：允许事务获得锁后去读数据。
+2. 排他锁(X 锁)：允许事务获得锁后去更新或删除数据。
+
+一个事务获取的共享锁(S)后，允许其他事务获取S锁，此时两个事务都持有共享锁(S)，但是不允许其他事务获取X锁。
+如果一个事务获取的排他锁(X)，则不允许其他事务获取S或者X锁，必须等到该事务释放锁后才可以获取到。
+
+```
+# T1
+START TRANSACTION WITH CONSISTENT SNAPSHOT;
+SELECT * FROM category WHERE category_no = 2 lock in SHARE mode; //共享锁
+SELECT * FROM category WHERE category_no = 2 for UPDATE; //排他锁
+COMMIT;
+
+# T2
+START TRANSACTION WITH CONSISTENT SNAPSHOT;
+SELECT * FROM category WHERE category_no = 2 lock in SHARE mode; //共享锁
+UPDATE category set category_name = '动漫' WHERE category_no = 2; //排他锁
+COMMIT;
+
+```
+
+### 意向锁(Intention Locks)
+InnoDB 支持行锁和表锁，意向锁是一种表级锁，用来指示接下来的一个事务将要获取的是什么类型的锁(共享还是排他)。
+意向锁分为意向共享锁(IS)和意向排他锁(IX)，依次表示接下来一个事务将会获得共享锁或者排他锁。
+意向锁不需要显示的获取，在获取共享锁或者排他锁的时候会自动的获取，意思也就是说，
+如果要获取共享锁或者排他锁，则一定是先获取到了意向共享锁或者意向排他锁。 意向锁不会锁住任何东西，
+除非有进行全表请求的操作，否则不会锁住任何数据。存在的意义只是用来表示有事务正在锁某一行的数据，或者将要锁某一行的数据。
+原文：Intention locks are table-level locks that indicate which type of lock (shared or exclusive) a transaction requires later for a row in a table.
+### 记录锁(record Locks)
+锁住某一行，如果表存在索引，那么记录锁是锁在索引上的，如果表没有索引，那么 InnoDB 会创建一个隐藏的聚簇索引加锁。
+所以在进行查询的时候尽量采用索引进行查询，这样可以降低锁的冲突。
+### 间隙锁(Gap Locks)
+间隙锁是一种记录行与记录行之间存在空隙或在第一行记录之前或最后一行记录之后产生的锁。间隙锁可能占据的单行，多行或者是空记录。
+通常的情况是我们采用范围查找的时候，比如在学生成绩管理系统中，如果此时有学生成绩 60，72，80，95，一个老师要查下成绩大于 72 的所有同学的信息，
+采用的语句是 select * from student where grade > 72 for update，这个时候 InnoDB 锁住的不仅是 80，95，而是所有在 72-80，80-95，以及 95 以上的所有记录。
+为什么会 这样呢？实际上是因为如果不锁住这些行，那么如果另一个事务在此时插入了一条分数大于 72 的记录，那会导致第一次的事务两次查询的结果不一样，出现了幻读。
+所以为了在满足事务隔离级别的情况下需要锁住所有满足条件的行。
+
+### 临键锁(Next-Key Locks)
+NK 是一种记录锁和间隙锁的组合锁,既包含区间又包含记录。是 3 和 4 的组合形式，既锁住行也锁住间隙。并且采用的左开右闭的原则。InnoDB 对于查询都是采用这种锁的。
+举个例子：
+```
+CREATE TABLE `a` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `uid` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_uid` (`uid`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+INSERT INTO `a`(uid) VALUES (1);
+INSERT INTO `a`(uid) VALUES (2);
+INSERT INTO `a`(uid) VALUES (3);
+INSERT INTO `a`(uid) VALUES (6);
+INSERT INTO `a`(uid) VALUES (10);
+
+# T1
+START TRANSACTION WITH CONSISTENT SNAPSHOT; //1
+SELECT * FROM a WHERE uid = 6 for UPDATE; //2
+COMMIT;  //5
+
+# T2
+START TRANSACTION WITH CONSISTENT SNAPSHOT;  //3
+INSERT INto a(uid) VALUES(11);
+INSERT INto a(uid) VALUES(5);  //4
+INSERT INto a(uid) VALUES(7);
+INSERT INto a(uid) VALUES(8);
+INSERT INto a(uid) VALUES(9);
+SELECT * FROM a WHERE uid = 6 for UPDATE;
+COMMIT;
+
+ROLLBACK;
+
+```
+
+按照上面 1，2，3，4 的顺序执行会发现第 4 步被阻塞了，必须执行完第 5 步后才能插入成功。这里会很奇怪明明锁住的是uid=6 的这一行，
+为什么不能插入 5 呢？原因就是这里采用了 next-key 的算法，锁住的是(3,10)整个区间。
+
+### 插入意向锁
+1.   插入意向锁是一种Gap锁，不是意向锁，在insert操作时产生。
+2.   在多事务同时写入不同数据至同一索引间隙的时候，并不需要等待其他事务完成，不会发生锁等待。
+3.   假设有一个记录索引包含键值4和7，不同的事务分别插入5和6，每个事务都会产生一个加在4-7之间的插入意向锁，获取在插入行上的排它锁，但是不会被互相锁住，因为数据行并不冲突。
+4.   插入意向锁不会阻止任何锁，对于插入的记录会持有一个记录锁。
+
+An insert intention lock is a type of gap lock set by INSERT operations prior to row insertion. 
+This lock signals the intent to insert in such a way that multiple transactions inserting into the same index gap 
+need not wait for each other if they are not inserting at the same position within the gap.
+Suppose that there are index records with values of 4 and 7. Separate transactions that attempt to insert values of 5 and 6, 
+respectively, each lock the gap between 4 and 7 with insert intention locks prior to obtaining the exclusive lock on the inserted row,
+ but do not block each other because the rows are nonconflicting.
+
+
+### [乐观锁悲观锁](https://www.jianshu.com/p/d2ac26ca6525)
+
+#### 悲观锁(Pessimistic Lock)
+
+
+当要对数据库中的一条数据进行修改的时候，为了避免同时被其他人修改，最好的办法就是直接对该数据进行加锁以防止并发。
+这种借助数据库锁机制，在修改数据之前先锁定，再修改的方式被称之为悲观并发控制【Pessimistic Concurrency Control，缩写“PCC”，又名“悲观锁”】。
+悲观锁，正如其名，具有强烈的独占和排他特性。它指的是对数据被外界(包括本系统当前的其他事务，以及来自外部系统的事务处理)修改持保守态度。
+因此，在整个数据处理过程中，将数据处于锁定状态。悲观锁的实现，往往依靠数据库提供的锁机制(也只有数据库层提供的锁机制才能真正保证数据访问的排他性，
+否则，即使在本系统中实现了加锁机制，也无法保证外部系统不会修改数据)。
+
+之所以叫做悲观锁，是因为这是一种对数据的修改持有悲观态度的并发控制方式。总是假设最坏的情况，每次读取数据的时候都默认其他线程会更改数据，因此需要进行加锁操作，当其他线程想要访问数据时，都需要阻塞挂起。悲观锁的实现：
+
+1. 传统的关系型数据库使用这种锁机制，比如行锁，表锁等，读锁，写锁等，都是在做操作之前先上锁。
+2. Java 里面的同步 synchronized 关键字的实现。
+
+
+#### 悲观锁主要分为共享锁和排他锁：
+
+1. 共享锁【shared locks】又称为读锁，简称S锁。顾名思义，共享锁就是多个事务对于同一数据可以共享一把锁，都能访问到数据，但是只能读不能修改。
+2. 排他锁【exclusive locks】又称为写锁，简称X锁。顾名思义，排他锁就是不能与其他锁并存，如果一个事务获取了一个数据行的排他锁，
+其他事务就不能再获取该行的其他锁，包括共享锁和排他锁，但是获取排他锁的事务是可以对数据行读取和修改。
+
+
+悲观并发控制实际上是“先取锁再访问”的保守策略，为数据处理的安全提供了保证。但是在效率方面，处理加锁的机制会让数据库产生额外的开销，还有增加产生死锁的机会。另外还会降低并行性，一个事务如果锁定了某行数据，其他事务就必须等待该事务处理完才可以处理那行数据。
+
+#### 乐观锁(Optimistic Locking)
+
+乐观锁是相对悲观锁而言的，乐观锁假设数据一般情况下不会造成冲突，所以在数据进行提交更新的时候，才会正式对数据的冲突与否进行检测，
+如果发现冲突了，则返回给用户错误的信息，让用户决定如何去做。乐观锁适用于读操作多的场景，这样可以提高程序的吞吐量。
+
+乐观锁机制采取了更加宽松的加锁机制。乐观锁是相对悲观锁而言，也是为了避免数据库幻读、业务处理时间过长等原因引起数据处理错误的一种机制，
+但乐观锁不会刻意使用数据库本身的锁机制，而是依据数据本身来保证数据的正确性。
+
+#### 乐观锁的实现：
+
+1. CAS 实现：Java 中java.util.concurrent.atomic包下面的原子变量使用了乐观锁的一种 CAS 实现方式。
+2. 版本号控制：一般是在数据表中加上一个数据版本号 version 字段，表示数据被修改的次数。当数据被修改时，version 值会+1。当线程A要更新数据值时，在读取数据的同时也会读取 version 值，在提交更新时，若刚才读取到的 version 值与当前数据库中的 version 值相等时才更新，否则重试更新操作，直到更新成功。
+
+
+
+
+
+-------------------
 
 ## 数据库的基本操作
 
@@ -403,3 +522,42 @@ select id from t where name like ‘abc%’
 
 [关系型数据库和非关系型数据库](http://my.oschina.net/u/1773689/blog/364548)
 
+
+## mysql 查询过程
+![avatar](database_pic/mysql_lookup.png)
+
+1. 客户端发送一条查询给服务器
+2. 服务器先检查查询缓存(见下面注释),如果命中了缓存,则立刻返回存储在缓存中的结果.否则,进入下一个阶段
+3. 服务器进行SQL解析.预处理,再由优化器生成对应的执行计划.
+4. MySQL根据优化器生成的执行计划,调用存储引擎的API来执行查询.
+5. 将结果返回给客户端
+
+注释:
+查询缓存:在解析一个查询语句前,如果缓存是打开的,那么MySQL会优先检查这个查询是否命中查询缓存中的数据.如果没有命中,则进入下一阶段的处理.如果命中查询缓存,则会检查用户的权限,如果权限没有问题,MySQL会跳过其他阶段,直接拿数据返回给客户端.
+(摘自高性能mysql第三版)
+
+### [MySQL查询分析器EXPLAIN或DESC用法](https://blog.csdn.net/helloxiaozhe/article/details/79951354) 
+
+## MySQL数据库设计步骤，注意事项
+1. 设计良好的数据库结构，允许部分数据冗余，尽量避免join查询，提高效率。
+2. 选择合适的表字段数据类型和存储引擎，适当的添加索引。
+3. mysql库主从读写分离。
+4. 找规律分表，减少单表中的数据量提高查询速度。
+5. 添加缓存机制，比如memcached，apc等。
+6. 书写高效率的SQL。比如 SELECT * FROM TABEL 改为 SELECT field_1, field_2, field_3 FROM TABLE.
+
+## char/varchar
+
+char 是一种固定长度的类型，varchar则是一种可变长度的类型，
+它们的区别是：
+char(M)类型的数据列里，每个值都占用M个字节，如果某个长度小于M，MySQL就会在它的右边用空格字符补足．（在检索操作中那些填补出来的空格字符将被去掉）在varchar(M)类型的数据列里，每个值只占用刚好够用的字节再加上一个用来记录其长度的字节（即总长度为L+1字节）．  
+
+varchar适用场景:
+
+字符串列得最大长度比平均长度大很多 2.字符串很少被更新，容易产生存储碎片 3.使用多字节字符集存储字符串
+
+Char场景:
+
+存储具有近似得长度（md5值,身份证，手机号）,长度比较短小得字符串（因为varchar需要额外空间记录字符串长度），更适合经常更新得字符串，更新时不会出现页分裂得情况，避免出现存储碎片，获得更好的io性能
+
+## [最全MySQL面试题和答案](https://www.cnblogs.com/lijiasnong/p/9963905.html)
