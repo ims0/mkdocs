@@ -115,6 +115,28 @@ GET产生一个TCP数据包；POST产生两个TCP数据包。
 ![avatar](tcp_ip_pic/http_response_demo.jpg)
 ![avatar](tcp_ip_pic/http_res_demo.png)
 
+## pratice
+
+### nc demo
+```
+nc -lv localhost 3000
+exec 10<> /dev/tcp/localhost/3000
+#
+cd /proc/$$/fd;ll
+tcpdump -X -i lo port 3000
+```
+
+### website test
+
+```
+exec 11<> /dev/tcp/www.baidu.com/80
+
+#send req
+echo -e "GET / HTTP/1.1\n" >&11
+
+#recv rsp
+cat <&11
+```
 
 ## 响应码
 
