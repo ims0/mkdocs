@@ -270,8 +270,19 @@ nc -v -p 5000 localhost 6000
 ```
 之后，Client 和 Server 端就可以相互聊天了。
 
+#### transport file
 
--------------
++ 模拟 recv 端：
+```
+# 监听 all addr
+nc -l 0.0.0.0 8000 >filename
+```
+
++ 模拟 send 端：
+```
+nc -v 121.4.107.187 8000 <filename
+```
+
 
 ### tcpdump
 
