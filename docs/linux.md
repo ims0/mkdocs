@@ -286,7 +286,22 @@ nc -v 121.4.107.187 8000 <filename
 
 ### tcpdump
 
+` sudo tcpdump -i eth0 port 8888 -vv `
+
+
+#### 查看HTTP GET请求
+`sudo tcpdump -s 0 -A 'tcp dst port 80 and tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x47455420'`
+
+#### 查看HTTP POST请求
+`sudo tcpdump -s 0 -A 'tcp dst port 80 and (tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x504f5354)'`
+
+#### 查看HTTP请求响应头以及数据
+`sudo tcpdump -A -s 0 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'`
+`sudo tcpdump -X -s 0 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'`
+
+
 https://www.cnblogs.com/bakari/p/10748721.html
+https://blog.csdn.net/u014481096/article/details/80257404
 
 ### df
 ### fdisk
