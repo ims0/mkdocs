@@ -6,7 +6,8 @@
 #!/bin/bash
 
 if [[ $1 =~ "g" ]];then
-    mkdocs serve -a 0.0.0.0:8000
+    echo "listen on 80 port, global"
+    mkdocs serve -a 0.0.0.0:80
 else
     mkdocs serve 
 fi
