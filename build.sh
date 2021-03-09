@@ -5,6 +5,11 @@
 ##########################################################
 #!/bin/bash
 
+#ubuntu root lack mkdocs resolve
+# vi /usr/local/bin/mkdocs
+# add follow context
+# sys.path.append('/home/username/.local/lib/python3.8/site-packages')
+
 if [[ $1 =~ "g" ]];then
     echo "listen on 80 port, global"
     mkdocs serve -a 0.0.0.0:80
