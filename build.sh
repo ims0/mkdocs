@@ -1,9 +1,9 @@
+#!/bin/bash
 ##########################################################
 # File Name: build.sh
 # Author: ims
 # Created Time: 2020年10月06日 星期二 11时00分33秒
 ##########################################################
-#!/bin/bash
 
 #ubuntu root lack mkdocs resolve
 # vi /usr/local/bin/mkdocs
