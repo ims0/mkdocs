@@ -51,7 +51,6 @@ offsetof(Base1, base1_2)|	8
 咦? 多了4个字节? 且 base1_1 和 base1_2 的偏移都各自向后多了4个字节!
 说明类对象的最前面被多加了4个字节的"东东", what's it?
 现在, 我们通过VS2013来瞧瞧类Base1的变量b1的内存布局情况:
-<div>
 
 ![image](cppVirtualFun_pic/base1.jpg )
 

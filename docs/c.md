@@ -73,12 +73,11 @@ int main()
 ```
 ## 最小值宏写法；
 1. 临时变量消除副作用
-2. typeof()获取入参实际类型
-3. 取地址防止类型不一样
-4. 加void消除结果未使用高级
+2. typeof() 获取入参实际类型
+3. 取地址防止类型不一样，不一样时候有告警：`comparison between distinct pointer types ‘int*’ and ‘unsigned int*’ lacks a cast`
+4. (void)() 消除结果未使用,否则有告警：`warning: statement with no effect [-Wunused-value]`
 
-(void)(&_x == &_y);可以产生的warning：
-comparison between distinct pointer types ‘int*’ and ‘unsigned int*’ lacks a cast
+
 ```
 #define max(x, y)                                                              \
   ({                                                                           \
