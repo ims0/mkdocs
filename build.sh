@@ -14,6 +14,6 @@ if [[ $1 =~ "g" ]];then
     echo "listen on 80 port, global"
     mkdocs serve -a 0.0.0.0:80
 else
-    mkdocs serve 
+    mkdocs serve -a 127.0.0.1:9000
 fi
 

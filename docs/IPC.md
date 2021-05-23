@@ -1,6 +1,23 @@
 # IPC
+## [posix](https://linuxhint.com/posix-standard/)
 
-## UNIX 版本
+Initially, POSIX was divided into multiple standards:
+
+* POSIX.1: Core Services
+* POSIX.1b: Real-time extensions
+* POSIX.1c: Threads extensions
+* POSIX.2: Shell and Utilities
+
+### Basics of POSIX
+POSIX.1-2008 standard deals with four major areas:
+
++ **Base Definition Volume:** General terms, concepts, and interfaces.
++ **Systems Interfaces Volume:** Definitions of system service functions and subroutines. Also, includes portability, error handling and error recovery.
+
++ **Shell and Utilities Volume:** Definition of interfaces of any application to command shells and common utility programs.
++ **Rationale Volume:** Contains information and history about added or discarded features and the reasonings of the decisions.
+
+## UNIX 版本中systemV与posix
 
 多数UNIX 系统或者源自 Berkeley，或者来自 System V
 大多数厂家一开始采用 Posix 标准，来减少这些差别。
@@ -17,18 +34,67 @@
 | 操作函数 | mq_send, mq_receive, mq_notify | sem_init, sem_trywait, sem_post, sem_getvalue| mmap, munmap|
 
 ----
-## 多线程涉及的4个主要领域
+
+###  systemV IPC 函数
+|type | 消息队列 | 信号量 | 共享内存|
+|-- | -- | -- | --- |
+|头文件|<sys/msg.h> | <sys/sem.h> | sys/shm.h |
+|创建打开IPC的函数 | msgget | semget| shmget|
+|控制IPC函数       | msgctl| semctl | shmctl|
+| 操作函数 | msgsnd, mqrcv | sem_op | shmat, shmdt|
+
+----
+
+## IPC形式汇总
 
 1. 消息传递（管道，FIFO，消息队列）
 2. 同步（互斥锁，条件变量，读写锁，信号量）
 3. 共享内存区
 4. 过程调用（Solaris 门， Sun RPC）
 
+### 同步的方式区别与选择
+
+posix.1 基本原理中声称，有了互斥锁和条件变量还提供信号量的原因如下：
+
+*提供信号量的目的是提供一种进程间同步的方式，这些进程可能共享内存，也可能不共享内存，互斥锁和条件变量是作为线程间同步方式说明的，这些线程总是共享某个内存区，这两个是使用多年的同步范式，每组元语都特别适合特定的问题。*
+
+虽然信号量是为了进程间同步而设置的，但是，信号量与互斥锁条件变量也能互换，根据实际问题选择合适的方式。
+
+## Posix IPC 名字
+
+mq_open,sem_open,shm_open,的第一个参数都使用这样一个名字，它可以是真正的文件名也可以不是，为了便于移植，Posix必须以一个斜杠开头，并且不能再含有任何其它斜杠。
+
 ## 消息队列
 
 消息队列具有随内核的持续性，一个进程发送完成退出，另一个进程再去读取。
+### Posix 消息队列 查看方式
+其实消息队列就是一个可以让进程间交换数据的场所，而两个标准的消息队列最大的不同可能只是api 函数的不同，如system v 的系列函数是msgxxx，而posix 是mq_xxx。posix 消息队列也有一些对消息长度等的限制：
+```
+$ cat /proc/sys/fs/mqueue/msg_max 
+10
+$ cat /proc/sys/fs/mqueue/msgsize_max 
+8192
+$ cat /proc/sys/fs/mqueue/queues_max 
+256
+```
+即一个消息队列最多能有10条消息，每条消息的最大长度为8192字节，一个系统最多能有256个消息队列。
 
-### Posix func
+还有一点是，在Linux上，posix 消息队列是以虚拟文件系统实现的，必须将其挂载到某个目录才能看见，如
+```
+# mkdir /dev/mqueue
+# mount -t mqueue none /dev/mqueue
+```
+通过cat 命令查看消息队列的状态，假设mymq 是创建的一条消息队列的名字
+```
+$ cat /dev/mqueue/mymq
+QSIZE:129     NOTIFY:2    SIGNO:0    NOTIFY_PID:8260
+```
++ QSIZE：消息队列所有消息的数据长度
++ NOTIFY_PID：某个进程使用mq_notify 注册了消息到达异步通知事件，即此进程的pid
++ NOTIFY：通知方式： 0 is SIGEV_SIGNAL; 1 is SIGEV_NONE; and 2 is SIGEV_THREAD.
++ SIGNO：当以信号方式通知的时候，表示信号的编号.
+
+### Posix 消息队列函数签名
 
 #### mq_open 
 - open a message queue
@@ -36,20 +102,42 @@
 ```
 mqd_t mq_open(const char *name, int oflag);
 mqd_t mq_open(const char *name, int oflag, mode_t mode, struct mq_attr *attr);
+
+c语言没有函数重载，这里用的是变参实现两种形式，实际形式如下
+mqd_t mq_open (const char *__name, int __oflag, ...)
+/* Establish connection between a process and a message queue NAME and
+   return message queue descriptor or (mqd_t) -1 on error.  OFLAG determines
+   the type of access used.  If O_CREAT is on OFLAG, the third argument is
+   taken as a `mode_t', the mode of the created message queue, and the fourth
+   argument is taken as `struct mq_attr *', pointer to message queue
+   attributes.  If the fourth argument is NULL, default attributes are
+   used.  */
 ```
-参数oflag必须被指定下面三个之一:
+第二个参数oflag必须被指定下面三个之一:
 ```
 O_RDONLY  :接收消息
 O_WRONLY  :发送消息
 O_RDWR    :收发消息
 ```
-下面是附加参数，or到oflag
+下面是oflag附加参数，|到oflag
 ```
 O_CLOEXEC   :close-on-exec
 O_CREAT     :Create  the message queue if it does not exist.
 O_EXCL      :if name already exists, then fail with the error EEXIST.
 O_NONBLOCK  :Open the queue in nonblocking mode.
 ```
+第三个参数 mode, 设置读写执行权限
+
+```
+#include <sys/stat.h>
+S_IRUSR   : 用户读
+S_IWUSR   : 用户写
+S_IRGRP   : 组成员读
+S_IWGRP   : 组成员写
+S_IROTH   : other读
+S_IWOTH   : other写
+```
+
 #### mq_send
 ```
 #include <mqueue.h>
@@ -95,34 +183,40 @@ int mq_setattr(mqd_t mqdes, const struct mq_attr *newattr, struct mq_attr *oldat
 ```
 
 mq_getattr() returns an mq_attr structure in the buffer pointed by attr.  This structure is defined as:
+
 ```
    struct mq_attr {
-       long mq_flags;       /* Flags: 0 or O_NONBLOCK */
-       long mq_maxmsg;      /* Max. # of messages on queue */
-       long mq_msgsize;     /* Max. message size (bytes) */
-       long mq_curmsgs;     /* # of messages currently in queue */
+       long mq_flags;       /* Message queue flags. mq_setattr*/
+       long mq_maxmsg;      /* Maximum number of messages. mq_open use */
+       long mq_msgsize;     /* Maximum message size. mq_open use  */
+       long mq_curmsgs;     /* Number of messages currently queued. mq_getatt*/
    };
+ Only the mq_maxmsg and mq_msgsize fields are employed when calling mq_open(); 
+ the values in the remaining fields are ignored.
+
 ```
 + mq_setattr唯一可以修改的字段是mq_flags，可选为阻塞或者非阻塞，其它属性在消息创建时指定，不能修改。
++ mq_open 可以识别的字段是mq_maxmsg,mq_msgsize，
+1. attr.mq_maxmsg 不能超过文件 /proc/sys/fs/mqueue/msg_max 中的数值；
+2. attr.mq_msgsize不能超过 /proc/sys/fs/mqueue/msgsize_max 的数值；
+3. 在POSIX消息队列中 msg_max 默认为 10 ，msgsize_max 默认为8192 ，否则会报错！！！
 + 如果 oldattr 不为NULL则返回旧属性类似mq_getattr()
-
-#### mq_unlink
-- remove a message queue
-```
-#include <mqueue.h>
-int mq_unlink(const char *name);
-```
 
 ####  mq_close
 - close a message queue descriptor
+关闭队列指针，程序结束会自动关闭
 ```
-#include <mqueue.h>
        int mq_close(mqd_t mqdes);
 ```
 
+#### mq_unlink
+- remove a message queue
+当队列引用计数为0的时候，删除系统中的
+```
+int mq_unlink(const char *name);
+```
 
-
-### SystemV func
+### SystemV 消息队列函数签名
 #### msgget
 returns the System V message queue identifier associated with the value of the key argument.  
 ```
