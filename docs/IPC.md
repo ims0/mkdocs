@@ -1,5 +1,27 @@
 # IPC
-## [posix](https://linuxhint.com/posix-standard/)
+## IPC形式汇总
+
+1. 消息传递（管道，FIFO，消息队列）
+2. 同步（互斥锁，条件变量，读写锁，信号量）
+3. 共享内存区
+4. 过程调用（Solaris 门， Sun RPC）
+
+### 同步的方式区别与选择
+
+posix.1 基本原理中声称，有了互斥锁和条件变量还提供信号量的原因如下：
+
+*提供信号量的目的是提供一种进程间同步的方式，这些进程可能共享内存，也可能不共享内存，互斥锁和条件变量是作为线程间同步方式说明的，这些线程总是共享某个内存区，这两个是使用多年的同步范式，每组元语都特别适合特定的问题。*
+
+虽然信号量是为了进程间同步而设置的，但是，信号量与互斥锁条件变量也能互换，根据实际问题选择合适的方式。
+
+
+
+## UNIX 版本中systemV与posix
+
+多数UNIX 系统或者源自 Berkeley，或者来自 System V
+大多数厂家一开始采用 Posix 标准，来减少这些差别。
+
+### [posix](https://linuxhint.com/posix-standard/)
 
 Initially, POSIX was divided into multiple standards:
 
@@ -16,15 +38,13 @@ POSIX.1-2008 standard deals with four major areas:
 
 + **Shell and Utilities Volume:** Definition of interfaces of any application to command shells and common utility programs.
 + **Rationale Volume:** Contains information and history about added or discarded features and the reasonings of the decisions.
-
-## UNIX 版本中systemV与posix
-
-多数UNIX 系统或者源自 Berkeley，或者来自 System V
-大多数厂家一开始采用 Posix 标准，来减少这些差别。
-
 [systemV与posix对比](https://blog.csdn.net/firstlai/article/details/50705042)
 
-###  posix IPC 函数
+### Posix IPC 名字规则
+
+mq_open,sem_open,shm_open,的第一个参数都使用这样一个名字，它可以是真正的文件名也可以不是，为了便于移植，Posix必须以一个斜杠开头，并且不能再含有任何其它斜杠。
+
+###  posix IPC 函数表
 
 |type | 消息队列 | 信号量 | 共享内存|
 |-- | -- | -- | --- |
@@ -35,7 +55,7 @@ POSIX.1-2008 standard deals with four major areas:
 
 ----
 
-###  systemV IPC 函数
+###  systemV IPC 函数表
 |type | 消息队列 | 信号量 | 共享内存|
 |-- | -- | -- | --- |
 |头文件|<sys/msg.h> | <sys/sem.h> | sys/shm.h |
@@ -45,24 +65,9 @@ POSIX.1-2008 standard deals with four major areas:
 
 ----
 
-## IPC形式汇总
 
-1. 消息传递（管道，FIFO，消息队列）
-2. 同步（互斥锁，条件变量，读写锁，信号量）
-3. 共享内存区
-4. 过程调用（Solaris 门， Sun RPC）
 
-### 同步的方式区别与选择
 
-posix.1 基本原理中声称，有了互斥锁和条件变量还提供信号量的原因如下：
-
-*提供信号量的目的是提供一种进程间同步的方式，这些进程可能共享内存，也可能不共享内存，互斥锁和条件变量是作为线程间同步方式说明的，这些线程总是共享某个内存区，这两个是使用多年的同步范式，每组元语都特别适合特定的问题。*
-
-虽然信号量是为了进程间同步而设置的，但是，信号量与互斥锁条件变量也能互换，根据实际问题选择合适的方式。
-
-## Posix IPC 名字
-
-mq_open,sem_open,shm_open,的第一个参数都使用这样一个名字，它可以是真正的文件名也可以不是，为了便于移植，Posix必须以一个斜杠开头，并且不能再含有任何其它斜杠。
 
 ## 消息队列
 
@@ -399,7 +404,7 @@ int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const s
 
 条件有两种形式，pthread_cond_signal()激活一个等待该条件的线程，存在多个等待线程时按入队顺序激活其中一个；而pthread_cond_broadcast()则激活所有等待线程。
 
-## 共享内存
+## 共享内存 IPC
 
 由于数据传递不涉及内核，所以共享内存是IPC中速度最快的，存取数据需要各种形式的同步:互斥锁，条件变量，读写锁，记录锁，信号量。
 
@@ -417,6 +422,43 @@ mmap函数把一个文件或一个Posix共享内存区对象映射到调用进�
 
 Posix共享内存构筑在mmap函数之上，首先指定一个Posix IPC名字来调用shm_open(),取得描述符后，使用mmap把它映射到内存，类似于内存映射文件。
 如果用内存映射文件的形式来实现Posix共享内存，只需要把shm_open()调用open(),shm_unlink调用unlink实现。
+
+### posix 共享内存函数签名
+```
+#include <sys/mman.h>
+/* Open shared memory segment.  */
+extern int shm_open (const char *__name, int __oflag, mode_t __mode);
+
+int ftruncate (int __fd, __off_t __length) __THROW __wur;
+
+extern void *mmap (void *__addr, size_t __len, int __prot,
+		   int __flags, int __fd, __off_t __offset) __THROW;
+           
+/* Remove shared memory segment.  */
+extern int shm_unlink (const char *__name); 
+```
+
+
+```
+  // O_TRUNC:若文件存在，则长度被截为0，属性不变
+  int oflag = O_RDWR | O_CREAT | O_TRUNC;
+  mode_t mode = S_IRUSR | S_IWUSR;
+  int fd = shm_open(px_name, oflag, mode);
+  if (fd == -1) {
+    fprintf(stderr, "shm_open: %s\n", strerror(errno));
+    return 1;
+  }
+  printf("fd: %d \n", fd);
+  ftruncate(fd, sizeof(people) * 10);
+
+  people *p_map = (people *)mmap(NULL, sizeof(people) * 10, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (p_map == (void *)-1) {
+    fprintf(stderr, "mmap: %s\n", strerror(errno));
+    return 1;
+  }
+  close(fd);
+
+```
 
 ### SystemV共享内存
 
