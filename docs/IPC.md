@@ -220,6 +220,32 @@ mq_getattr() returns an mq_attr structure in the buffer pointed by attr.  This s
 ```
 int mq_unlink(const char *name);
 ```
+#### mq_notify
+
+System V消息队列的问题之一是无法通知一个进程何时在某个队列中放置了一个消息。采用轮询（poling），是对CPU时间的一种浪费。Posix消息队列容许 异步事件通知，以告知何时有一个消息放置到某个空消息队列中。该通知有两种方式：当一个消息被放置某个空队列时，样么产生一个信号来通知，样么通过创建一个线程来执行一个特定程序，来完成消息到来时的该做的事情。
+
+```
+int mq_notify(mqd_t mqdes, const struct sigevent* notification);
+union sigval{
+int     sival_int;          /*integer value*/
+void    *sival_ptr;         /*pointer value*/
+};
+ 
+struct sigevent{
+int     sigev_notify;       /*SIGEV_{NONE, SIGNAL, THREAD}*/
+int     sigev_signo;        /*signal number if SIGEV_SIGNAL*/
+ 
+union sigval    sigev_value;//sigev_notify_function指定函数的参数由该变量指定
+```
+该函数为指定队列建立或删除异步事件通知
+
++ (1).如果notification参数为非空，那么当前进程希望在有一个消息到达所指定的先前为空的对列时得到通知。
++ (2).如果notification参数为空，而且当前进程被注册为接收指定队列的通知，那么已存在的注册将被撤销。
++ (3).任意时刻只有一个进程可以被注册为接收某个给定队列的通知。
++ (4).当有一个消息到达先前为空的消息队列，而且已有一个进程被注册为接收该队列的通知时，只有在没有任何线程阻塞在该队列的mq_receive调用中的前提下，通知才会发出。即说明，在mq_receive调用中的阻塞比任何通知的注册都优先。
++ (5).当前通知被发送给它的注册进程时，其注册几倍撤销。该进程必须再次调用mq_notify以重新注册。
+
+
 
 ### SystemV 消息队列函数签名
 #### msgget
@@ -291,6 +317,7 @@ struct msqid_ds {
 
 
 ### posix与systemV消息队列的差异
+
 
 1. posix消息队列总是返回最高优先级的最早消息，SystemV消息队列可以返回任意指定优先级的消息
 2. 当往一个空队列放置消息的时候，Posix消息队列允许产生一个信号或启动一个线程，SystemV没有类似的机制
