@@ -11,8 +11,8 @@
 # sys.path.append('/home/username/.local/lib/python3.8/site-packages')
 
 if [[ $1 =~ "g" ]];then
-    echo "listen on 80 port, global"
-    mkdocs serve -a 0.0.0.0:80
+    echo "listen on 80 port, global daemon"
+    nohup mkdocs serve -a 0.0.0.0:80 &
 else
     mkdocs serve -a 127.0.0.1:9000
 fi
