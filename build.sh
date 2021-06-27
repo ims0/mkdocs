@@ -9,11 +9,24 @@
 # vi /usr/local/bin/mkdocs
 # add follow context
 # sys.path.append('/home/username/.local/lib/python3.8/site-packages')
+#daemonize 原文链接：https://blog.csdn.net/erlang_hell/article/details/51187205
+
+PID_FILE=daemonize.pid
+PORT=9000
+
+if [ $# -eq 0 ]; then
+    echo "daemonize run"
+    daemonize -a -e ./error.log -p $PID_FILE -l $PID_FILE -c ./  /usr/local/bin/mkdocs serve -a 127.0.0.1:$PORT
+    exit
+fi
 
 if [[ $1 =~ "g" ]];then
     echo "listen on 80 port, global daemon"
     nohup mkdocs serve -a 0.0.0.0:80 &
-else
-    mkdocs serve -a 127.0.0.1:9000
 fi
 
+if [[ $1 =~ "kill" ]];then
+    pid=`cat $PID_FILE`
+    echo pid:$pid
+    kill $pid
+fi

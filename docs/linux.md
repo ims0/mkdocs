@@ -41,7 +41,7 @@ c/c++不直接支持协程语义，但有不少开源的协程库，如：
 * 第三种：利用C语言语法switch-case的奇淫技巧来实现（Protothreads)
 * 第四种：利用了 C 语言的 setjmp 和 longjmp（ [一种协程的 C/C++ 实现](https://www.cnblogs.com/Pony279/p/3903048.html),要求函数里面使用 static local 的变量来保存协程内部的数据）
 
-### 使用ucontext来实现简单的协程库
+### 使用glibc 中的ucontext来实现简单的协程库
 利用ucontext提供的四个函数getcontext(),setcontext(),makecontext(),swapcontext()可以在一个进程中实现用户级的线程切换。
 
  本节我们先来看ucontext实现的一个简单的例子：
@@ -79,13 +79,13 @@ cxy@ubuntu:~$
 
 mcontext_t类型与机器相关，并且不透明.ucontext_t结构体则至少拥有以下几个域:
 ```
-           typedef struct ucontext {
-               struct ucontext *uc_link;
-               sigset_t         uc_sigmask;
-               stack_t          uc_stack;
-               mcontext_t       uc_mcontext;
-               ...
-           } ucontext_t;
+   typedef struct ucontext {
+       struct ucontext *uc_link;
+       sigset_t         uc_sigmask;
+       stack_t          uc_stack;
+       mcontext_t       uc_mcontext;
+       ...
+   } ucontext_t;
 ```
  当当前上下文(如使用makecontext创建的上下文）运行终止时系统会恢复uc_link指向的上下文；uc_sigmask为该上下文中的阻塞信号集合；uc_stack为该上下文中使用的栈；uc_mcontext保存的上下文的特定机器表示，包括调用线程的特定寄存器等。
 
@@ -288,6 +288,17 @@ nc -v 121.4.107.187 8000 <filename
 
 ` sudo tcpdump -i eth0 port 8888 -vv `
 
+#### 查看本地流量
+
+` sudo tcpdump -i lo port 8888 -vv `
+
+#### 查看指定协议的流量
+
+```
+sudo tcpdump udp -i eth0 -vv 
+sudo tcpdump tcp -i eth0 -vv
+sudo tcpdump icmp -i eth0 -vv
+```
 
 #### 查看HTTP GET请求
 `sudo tcpdump -s 0 -A 'tcp dst port 80 and tcp[((tcp[12:1] & 0xf0) >> 2):4] = 0x47455420'`
