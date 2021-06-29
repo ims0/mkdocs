@@ -25,6 +25,11 @@ if [[ $1 =~ "g" ]];then
     nohup mkdocs serve -a 0.0.0.0:80 &
 fi
 
+if [[ $1 =~ "l" ]];then
+    echo "local mode"
+    mkdocs serve
+fi
+
 if [[ $1 =~ "kill" ]];then
     pid=`cat $PID_FILE`
     echo pid:$pid

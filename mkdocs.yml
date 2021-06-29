@@ -14,6 +14,8 @@ nav:
     - CPP: cpp.md
     - C: c.md
     - RCU: rcu.md
+    - ThreadPoll: thread_poll.md
+    - ProcessDesc: process_desc.md
     - BackQuestion: back-end.md
 
 markdown_extensions:
