@@ -14,7 +14,7 @@ nav:
     - CPP: cpp.md
     - C: c.md
     - RCU: rcu.md
-    - ThreadPoll: thread_poll.md
+    - ThreadPool: thread_pool.md
     - ProcessDesc: process_desc.md
     - BackQuestion: back-end.md
 

@@ -1,3 +1,6 @@
+
+#
+
 ## Linux 对进程的描述
 
 进程是操作系统种调度的实体，对进程拥有资源的描述称为进程控制块（PCB, Process Contrl Block）
@@ -148,7 +151,6 @@ struct task_struct init_task __aligned(L1_CACHE_BYTES) =
 
 
 ```
-
 static __always_inline struct task_struct *get_current(void)
 {
     unsigned long sp_el0;
@@ -162,7 +164,6 @@ static __always_inline struct task_struct *get_current(void)
 ```
 
 代码比较简单，可以看出通过读取用户空间栈指针寄存器 sp_el0 的值，然后将此值强转成 task_struct 结构就可以获得当前进程。（sp_el0 里存放的是 init_task，即 thread_info 地址，thread_info 又是在 task_sturct 的开始处，从而找到当前进程。）
-
 
 
 [src url](https://mp.weixin.qq.com/s/UccJLhVUlsTNB8xdzmJ90g)

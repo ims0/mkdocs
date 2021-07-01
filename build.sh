@@ -25,7 +25,7 @@ if [[ $1 =~ "g" ]];then
     nohup mkdocs serve -a 0.0.0.0:80 &
 fi
 
-if [[ $1 =~ "l" ]];then
+if [[ $1 =~ "local" ]];then
     echo "local mode"
     mkdocs serve
 fi
