@@ -16,7 +16,8 @@ nav:
     - RCU: rcu.md
     - ThreadPool: thread_pool.md
     - ProcessDesc: process_desc.md
-    - ThreadSched: linux_thread_sched.md
+    - ThreadSched: thread_sched.md
+    - Listen: listen.md
     - BackQuestion: back-end.md
 
 markdown_extensions:

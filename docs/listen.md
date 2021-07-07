@@ -254,9 +254,9 @@ roundup_pow_of_two (128 + 1) = 256
 !!! note "note"
     如果你在线上遇到了半连接队列溢出的问题，想加大该队列长度，那么就需要同时考虑 somaxconn、backlog、和 tcp_max_syn_backlog 三个内核参数。
 
-最后再说一点，为了提升比较性能，内核并没有直接记录半连接队列的长度。而是采用了一种晦涩的方法，只记录其幂次假设队列长度为 16，则记录 max_qlen_log 为 4 （2 的 4 次方等于 16），假设队列长度为 256，则记录 max_qlen_log 为 8 （2 的 8 次方等于 16）。大家只要知道这个东东就是为了提升性能的就行了。
+最后再说一点，为了提升比较性能，内核并没有直接记录半连接队列的长度。而是采用了一种晦涩的方法，只记录其幂次假设队列长度为 16，则记录 max_qlen_log 为 4 （2 ^4 = 16），假设队列长度为 256，则记录 max_qlen_log 为 8 （2 ^ 8 = 256）。大家只要知道这个东东就是为了提升性能的就行了。
 
-### 最后，总结一下
+## 最后，总结一下
 
 计算机系的学生就像背八股文一样记着服务器端 socket 程序流程：先 bind、再 listen、然后才能 accept。至于为什么需要先 listen 一下才可以 accpet，似乎我们很少去关注。
 
@@ -277,3 +277,7 @@ roundup_pow_of_two (128 + 1) = 256
 在 listen 的过程中，内核我们也看到了对于半连接队列来说，其最大长度是 min(backlog, somaxconn, tcp_max_syn_backlog) + 1 再上取整到 2 的幂次，但最小不能小于16。如果需要加大半连接队列长度，那么需要一并考虑 backlog，somaxconn 和 tcp_max_syn_backlog 这三个参数。网上任何告诉你修改某一个参数就能提高半连接队列长度的文章都是错的。
 
 所以，不放过一个细节，你可能会有意想不到的收获！
+
+https://mp.weixin.qq.com/s/hv2tmtVpxhVxr6X-RNWBsQ
+
+[拆解 Linux 网络包发送过程](https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&mid=2247485146&idx=1&sn=e5bfc79ba915df1f6a8b32b87ef0ef78&chksm=a6e307e191948ef748dc73a4b9a862a22ce1db806a486afce57475d4331d905827d6ca161711&scene=178&cur_album_id=1532487451997454337#rd)
