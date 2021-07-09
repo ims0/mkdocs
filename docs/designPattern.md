@@ -1,5 +1,7 @@
 # patteern 
 
+![avator](design_pic/design.png)
+
 ## 设计模式主要是基于以下的面向对象设计原则。
 
 + 对接口编程而不是对实现编程。
