@@ -1,26 +1,20 @@
-# thread sched
-
+# 
 ## Linux 中实时任务调度与优先级
 
 <font color="#009999">Linux 系统中下面几个概念：</font>
 
 1. <font color="#ff0000">实时</font> 进程和<font color="#ff0000">普通</font> 进程的调度策略；
-
 2. Linux 中 **混乱的** 进程优先级是如何计算的；
-
 3. CPU **亲和性** 的测试；
-
 4. **多处理器** (SMP)遇到实时进程和普通进程的程序设计； 
+* 进程调度相关的系统调用定义在`/usr/include/sched.h`
+* 线程调度相关的系统调用定义在`/usr/include/pthread.h`
 
-5. 道哥的脑袋被门夹了一下的短路经历；
 
 ## <font color="#992233">背景知识：Linux 调度策略</font>
 关于进程的 **调度策略**，不同的操作系统有不同的整体 **目标**，因此调度算法也就各不相同。
-
 这需要根据进程的 **类型** (计算密集型？IO密集型？)、 **优先级** 等因素来进行选择。
-
 对于 **Linux  x86** 平台来说，一般采用的是 **CFS**：<font color="#ff0000">**完全公平调度算法**</font>。
-
 之所以叫做完全公平，是因为操作系统以每个线程占用 **CPU** 的 **比率** 来进行动态的计算，操作系统希望每一个进程都能够 **平均** 的使用 **CPU** 这个资源，雨露均沾。
 
 我们在创建一个线程的时候，**默认** 就是这个调度算法 **SCHED_OTHER** ，默认的 **优先级** 为 **0** 。
@@ -38,11 +32,11 @@
 
 因此，操作系统引入了 **最小粒度** ，也就是每个进程都有一个最小的执行时间保证，称作 **时间片** 。
 
-除了 **SCHED_OTHER** 调度算法，**Linux** 系统还支持 **两种实时调度策略** ：
+除了 **SCHED_OTHER** 调度算法，Linux系统还支持两种实时调度策略：
 
-1. SCHED_FIFO：根据进程的优先级进行调度，一旦抢占到 CPU 则一直运行，直达自己主动放弃或被被更高优先级的进程抢占;
+1. <font color="#0055ff">SCHED_FIFO</font>：根据进程的优先级进行调度，一旦抢占到 CPU 则一直运行，直达自己主动放弃或被被更高优先级的进程抢占;
 
-2. SCHED_RR：在 SCHED_FIFO 的基础上，加上了时间片的概念。当一个进程抢占到 CPU 之后，运行到一定的时间后，调度器会把这个进程放在 CPU 中，当前优先级进程队列的末尾，然后选择另一个相同优先级的进程来执行;
+2. <font color="#0055ff">SCHED_RR</font>：在 **SCHED_FIFO** 的基础上，加上了时间片的概念。当一个进程抢占到 CPU 之后，运行到一定的时间后，调度器会把这个进程放在 CPU 中，当前优先级进程队列的末尾，然后选择另一个相同优先级的进程来执行;
 
 本文想测试的就是 **SCHED_FIFO** 与普通的 **SCHED_OTHER** 这两种调度策略混合的情况。
 
@@ -122,6 +116,19 @@ kernel prifoity = 100 + 20 + nice
 2. `#include <sched.h>` 必须在 `#include <pthread.h> `之前包含进来;
 3. 这个顺序能够保证在后面设置继承的 CPU 亲和性时，CPU_SET, CEPU_ZERO这两个函数能被顺利定位到。
 
+在线程入口函数  thread_routine 的开头，增加下面的代码,是为了防止在多核心cpu中，看不到调度的效果
+```
+cpu_set_t mask;
+int cpus = sysconf(_SC_NPROCESSORS_CONF);
+CPU_ZERO(&mask);
+CPU_SET(0, &mask);
+//pthread_setaffinity_np define in ptherad.h
+if (pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0)
+{
+    printf("set thread affinity failed! \n");
+}
+```
+完整代码
 
 ```
 #define _GNU_SOURCE
@@ -252,4 +259,43 @@ int main(void)
 
 ```
 
-https://mp.weixin.qq.com/s/9EDO1DL8pJKIXUXb8tR_cA
+[Linux 中实时任务调度与优先级](https://mp.weixin.qq.com/s/9EDO1DL8pJKIXUXb8tR_cA)
+
+## [图解：进程怎么绑定 CPU](https://mp.weixin.qq.com/s/Qk1czeR21TtAU9wGQZJQAA)
+
+昨天在群里有朋友问：把进程绑定到某个 CPU 上运行是怎么实现的。
+首先，我们先来了解下将进程与 CPU 进行绑定的好处。
+
+!!! note
+    进程绑定 CPU 的好处：在多核 CPU 结构中，每个核心有各自的L1、L2缓存，而L3缓存是共用的。如果一个进程在核心间来回切换，各个核心的缓存命中率就会受到影响。相反如果进程不管如何调度，都始终可以在一个核心上执行，那么其数据的L1、L2 缓存的命中率可以显著提高。
+
+所以，将进程与 CPU 进行绑定可以提高 CPU 缓存的命中率，从而提高性能。而进程与 CPU 绑定被称为：CPU 亲和性。
+
+
+
+
+```
+#define _GNU_SOURCE
+#include <sched.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+
+int main(int argc, char **argv)
+{
+    cpu_set_t cpuset;
+
+    CPU_ZERO(&cpuset);    // 初始化CPU集合，将 cpuset 置为空
+    CPU_SET(2, &cpuset);  // 将本进程绑定到 CPU2 上
+
+    // 设置进程的 CPU 亲和性
+    if (sched_setaffinity(0, sizeof(cpuset), &cpuset) == -1) {
+        printf("Set CPU affinity failed, error: %s\n", strerror(errno));
+        return -1; 
+    }
+
+    return 0;
+}
+```

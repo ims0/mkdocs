@@ -18,6 +18,7 @@ nav:
     - ProcessDesc: process_desc.md
     - ThreadSched: thread_sched.md
     - Listen: listen.md
+    - Mutex: mutex.md
     - BackQuestion: back-end.md
 
 markdown_extensions:
