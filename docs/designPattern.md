@@ -1,49 +1,45 @@
 # patteern 
 
+[c语言中文网设计模式](http://c.biancheng.net/design_pattern/)
+
 ![avator](design_pic/design.png)
+
 
 ## 设计模式主要是基于以下的面向对象设计原则。
 
 + 对接口编程而不是对实现编程。
 + 优先使用对象组合而不是继承。
 
-## 设计模式总共有 23 种设计模式
 这些模式可以分为三大类：
 
 + 创建型模式（Creational Patterns）
 + 结构型模式（Structural Patterns）
 + 行为型模式（Behavioral Patterns）
 
-[23种设计模式总结](https://www.cnblogs.com/tongkey/p/7170826.html)
-## 创建型模式
+## 一，创建型模式
 
 这些设计模式提供了一种在创建对象的同时隐藏创建逻辑的方式，而不是使用 new 运算符直接实例化对象。这使得程序在判断针对某个给定实例需要创建哪些对象时更加灵活。
 
-+ 工厂模式（Factory Pattern）
-+ 抽象工厂模式（Abstract Factory Pattern）
++ 工厂方法（Factory Method）
++ 抽象工厂模式（Abstract Factory）
 + 单例模式（Singleton Pattern）
 + 建造者模式（Builder Pattern）
 + 原型模式（Prototype Pattern）
 
-### 工厂模式
+### 1.1.工厂方法(Factory Method)
 
-工厂模式一般分为三种：简单工厂模式、工厂方法模式、抽象工厂模式。
+工厂模式一般分为三种：简单工厂模式、工厂方法模式。
 
-1. 简单工厂模式：
-
-*意图*：定义一个创建对象的接口，让其子类自己决定实例化哪一个工厂类，工厂模式使其创建过程延迟到子类进行。
-
-*主要解决*：主要解决接口选择的问题。
-
-*何时使用*：我们明确地计划不同条件下创建不同实例时。
-
-*如何解决*：让其子类实现工厂接口，返回的也是一个抽象的产品。
-
-*关键代码*：创建过程在其子类执行。
+#### 参数化--工厂模式：  
+**意图** ：定义一个创建对象的接口，让其子类自己决定实例化哪一个工厂类，工厂模式使其创建过程延迟到子类进行。  
+**主要解决** ：主要解决接口选择的问题。  
+**何时使用** ：我们明确地计划不同条件下创建不同实例时。  
+**如何解决** ：让其子类实现工厂接口，返回的也是一个抽象的产品。  
+**关键代码** ：创建过程在其子类执行。  
 
 工厂类根据参数不同 创建有公共父类的不同对象，返回父类的指针。例子中是创建不同品牌的车。
 
-```
+```cpp
 #include <iostream>
 using namespace std;
 
@@ -96,16 +92,14 @@ int main(int argc, char *argv[]) {
   delete carB;
   return 0;
 }
-
-
 ```
-### 工厂方法模式：
+####  多态化--工厂方法模式：
 
 简述：工厂类改为抽象类，由子类负责创建。
 
 工厂方法模式：不再只由一个工厂类决定那一个产品类应当被实例化,这个决定权被交给子类去做。当有新的产品（新型汽车）产生时，只要按照抽象产品角色、抽象工厂角色提供的方法来生成即可（新车型可以用一个新类继承创建产品即可），那么就可以被客户使用，而不必去修改任何已有的代 码。可以看出工厂角色的结构也是符合开闭原则。
 
-```
+```cpp
 #include <iostream>
 using namespace std;
 
@@ -158,15 +152,13 @@ int main(int argc, char **argv) {
 }
 ```
 
-### 抽象工厂：
+### 1.2.抽象工厂(Abstract Factory)
 
 在上面的工厂方法模式基础上，有需要生产高配版的奔驰和宝马，那工厂方法模式就有点鞭长莫及了，这就又有抽象工厂模式
 
 简述：指定品牌后可以创建多个类型的对象。
 
-```
-
-
+```cpp
 #include <iostream>
 using namespace std;
 
@@ -242,78 +234,13 @@ int main(int argc, char **argv) {
 
 ```
 
-### 单例模式
-
-#### 饿汉模式
-
-是指单例实例在程序运行时被立即执行初始化:
-这种模式的问题也很明显, 类现在是多态的, 但静态成员变量初始化顺序还是没保证.
-
-```
-
-#include <iostream>
-class ClassStaticObj {
-public:
-  static ClassStaticObj &Instance() { return m_instance; }
-  void Print() { std::cout << m_var << std::endl; }
-
-private:
-  ClassStaticObj(){};                                // ctor is hidden
-  ClassStaticObj(ClassStaticObj const &);            // copy ctor is hidden
-  ClassStaticObj &operator=(ClassStaticObj const &); // assign op is hidden
-
-  int m_var = 10;
-  static ClassStaticObj m_instance;
-};
-// in log. cpp we have to declare
-ClassStaticObj ClassStaticObj::m_instance;
-
-int main() {
-  ClassStaticObj::Instance().Print();
-  return 0;
-}
-
-```
-
-#### 懒汉模式(堆-粗糙版)
-
-(堆-粗糙版): 单例实例只在第一次被使用时进行初始化:
-
-Instance() 只在第一次被调用时为 m_pInstance 分配内存并初始化. 嗯, 看上去所有的问题都解决了, 初始化顺序有保证, 多态也没问题. 程序退出时, 析构函数没被执行. 这在某些设计不可靠的系统上会导致资源泄漏, 比如文件句柄, socket 连接, 内存等等 对于这个问题, 比较土的解决方法是, 给每个 Singleton 类添加一个 destructor() 方法:
-
-```
-#include <iostream>
-
-class HeapObj {
-public:
-  static HeapObj *Instance() {
-    if (!m_pInstance)
-      m_pInstance = new HeapObj;
-    return m_pInstance;
-  }
-  void Print() { std::cout << m_var << std::endl; }
-
-private:
-  HeapObj(){};                                // ctor is hidden
-  HeapObj(HeapObj const &);            // copy ctor is hidden
-  HeapObj &operator=(HeapObj const &); // assign op is hidden
-
-  int m_var = 9;
-  static HeapObj *m_pInstance;
-};
-HeapObj *HeapObj::m_pInstance = NULL;
-
-int main() {
-  HeapObj::Instance()->Print();
-  return 0;
-}
-```
-
-#### 懒汉模式(堆-线程安全模式)
+### 1.3.单例模式(Singleton)
+#### a.懒汉模式(堆-线程安全模式)
 解决了线程安全与释放问题。
 
 + singleton.h
-```
+
+```cpp
 #include <boost/noncopyable.hpp>
 #include <pthread.h>
 #include <stdio.h>
@@ -359,9 +286,10 @@ class NonTemplate {
 };
 // int NonTemplate::a=1; //multiple definition of `NonTemplate::a';
 ```
+
 + test.cpp
 
-```
+```cpp
 #include "singleton.h"
 
 class Base {
@@ -378,14 +306,13 @@ int main() {
 }
 ```
 
-
-#### 懒汉模式 (局部静态变量-最佳版)
+#### b.懒汉模式 (局部静态变量)
 
 在 Instance() 函数内定义局部静态变量的好处是, theLog 的构造函数只会在第一次调用Instance() 时被初始化, 达到了和 "堆栈版" 相同的动态初始化效果, 保证了成员变量和 Singleton 本身的初始化顺序.
 
 它还有一个潜在的安全措施, Instance() 返回的是对局部静态变量的引用, 如果返回的是指针, Instance() 的调用者很可能会误认为他要检查指针的有效性, 并负责销毁. 构造函数和拷贝构造函数也私有化了, 这样类的使用者不能自行实例化.
 
-```
+```cpp
 #include <iostream>
 #include <list>
 class Log {
@@ -402,7 +329,7 @@ public:
   }
 
 private:
-  Log(){};                     // ctor is hidden
+  Log() {};                     // ctor is hidden
   Log(Log const &);            // copy ctor is hidden
   Log &operator=(Log const &); // assign op is hidden
   std::list<std::string> m_data;
@@ -415,36 +342,163 @@ int main() {
 ```
 
 
-## 结构型模式
+#### c.懒汉模式(堆-粗糙版)
+
+(堆-粗糙版): 单例实例只在第一次被使用时进行初始化:
+
+Instance() 只在第一次被调用时为 m_pInstance 分配内存并初始化. 嗯, 看上去所有的问题都解决了, 初始化顺序有保证, 多态也没问题. 程序退出时, 析构函数没被执行. 这在某些设计不可靠的系统上会导致资源泄漏, 比如文件句柄, socket 连接, 内存等等 对于这个问题, 比较土的解决方法是, 给每个 Singleton 类添加一个 destructor() 方法:
+
+```cpp
+#include <iostream>
+
+class HeapObj {
+public:
+  static HeapObj *Instance() {
+    if (!m_pInstance)
+      m_pInstance = new HeapObj;
+    return m_pInstance;
+  }
+  void Print() { std::cout << m_var << std::endl; }
+
+private:
+  HeapObj(){};                                // ctor is hidden
+  HeapObj(HeapObj const &);            // copy ctor is hidden
+  HeapObj &operator=(HeapObj const &); // assign op is hidden
+
+  int m_var = 9;
+  static HeapObj *m_pInstance;
+};
+HeapObj *HeapObj::m_pInstance = NULL;
+
+int main() {
+  HeapObj::Instance()->Print();
+  return 0;
+}
+```
+
+#### d.饿汉模式
+
+是指单例实例在程序运行时被立即执行初始化:
+这种模式的问题也很明显, 类现在是多态的, 但静态成员变量初始化顺序还是没保证.
+
+```cpp
+#include <iostream>
+class ClassStaticObj {
+public:
+  static ClassStaticObj &Instance() { return m_instance; }
+  void Print() { std::cout << m_var << std::endl; }
+
+private:
+  ClassStaticObj(){};                                // ctor is hidden
+  ClassStaticObj(ClassStaticObj const &);            // copy ctor is hidden
+  ClassStaticObj &operator=(ClassStaticObj const &); // assign op is hidden
+
+  int m_var = 10;
+  static ClassStaticObj m_instance;
+};
+// in log. cpp we have to declare
+ClassStaticObj ClassStaticObj::m_instance;
+
+int main() {
+  ClassStaticObj::Instance().Print();
+  return 0;
+}
+```
+
+### 1.4.建造者模式（Builder）
+
++ 意图
+
+将一个复杂对象的构建与表示分离，使得同样的构建过程可以创建不同的表示。
+
+https://zhuanlan.zhihu.com/p/58093669
+
++ 使用
+    1. 首先生成一个director  
+    2. 然后生成一个目标builder  
+    3. 接着使用director组装builder  
+    4. 组装完毕后使用builder创建产品实例 
+
+
+### 1.5.原型模式（Prototype）
+
+
++ 意图
+
+用原型实例指定创建对象的种类，并且通过copy这些原型创建新的对象。
+
+
+
+## 二，结构型模式  
 这些设计模式关注类和对象的组合。继承的概念被用来组合接口和定义组合对象获得新功能的方式。
 
-+ 适配器模式（Adapter Pattern）
-+ 桥接模式（Bridge Pattern）
-+ 过滤器模式（Filter、Criteria Pattern）
-+ 组合模式（Composite Pattern）
-+ 装饰器模式（Decorator Pattern）
-+ 外观模式（Facade Pattern）
-+ 享元模式（Flyweight Pattern）
-+ 代理模式（Proxy Pattern）
+### 2.1 适配器模式（Adapter）
++ 意图  
+将一个类的接口转换成客户希望的另外一个接口，使得原本由于接口不兼容而不能一起工作的那些类能一起工作。
 
-## 行为型模式
++ c++ 实现  
+用公共方式继承接口，用私有方式继承接口的实现
+
++ 与Bridge模式对比  
+Bridge 的目的是将接口与实现分离，从而比较容易的独立改变它们，而Adapter意味着改变一个已有对象的接口。
+
+
+### 2.2 桥接模式（Bridge）
++ 意图  
+将抽象部分与它的实现分离，使它们可以独立的改变。
+
++ c++ 实现  
+抽象类保存实现类的引用
+
+
+### 2.3 组合模式（Composite）
+### 2.4 装饰器模式（Decorator）
++ 意图  
+动态的给一个对象添加额外的职责，就增加功能来说，Decorator 比生成子类更为灵活。
+
++ c++ 实现  
+    1. 子类保存父类的引用，接口缺省调用父类的实现；
+    2. 装饰的孙类重写父类的接口，在调用父类实现的同时增加自己的实现。`{dosomething(),Base::func()}`
+
+
+
+### 2.5 外观模式（Facade）
+### 2.6 享元模式（Flyweight）
+### 2.7 代理模式（Proxy）
++ 意图  
+为其他对象提供一种代理以控制对这个对象的访问。
+
+
+
+
+## 三，行为型模式
 这些设计模式特别关注对象之间的通信。
 
-+ 责任链模式（Chain of Responsibility Pattern）
-+ 命令模式（Command Pattern）
-+ 解释器模式（Interpreter Pattern）
-+ 迭代器模式（Iterator Pattern）
-+ 中介者模式（Mediator Pattern）
-+ 备忘录模式（Memento Pattern）
-+ 观察者模式（Observer Pattern）
-+ 状态模式（State Pattern）
-+ 空对象模式（Null Object Pattern）
-+ 策略模式（Strategy Pattern）
-+ 模板模式（Template Pattern）
-+ 访问者模式（Visitor Pattern）
+### 3.1 责任链模式（Chain of Responsibility）
++ 意图  
+避免请求发送者与接收者耦合在一起，让多个对象都有可能接收请求，将这些对象连接成一条链，并且沿着这条链传递请求，直到有对象处理它为止。
 
-### 观察者模式
+### 3.2 命令模式（Command）
+### 3.3 解释器模式（Interpreter）
+### 3.4 迭代器模式（Iterator）
++ 意图  
+提供一个方法顺序访问一个聚合对象中的各个元素，而又不需要暴露该对象的内部表示。
+
+### 3.5 中介者模式（Mediator）
+### 3.6 备忘录模式（Memento）
+### 3.7 观察者模式（Observer）
++ 意图  
+定义对象间的一种一对多的依赖关系，当一个对象的状态发生改变时，所有依赖它的对象都得到通知并自动更新。
+
+
 当对象间存在一对多关系时，则使用观察者模式（Observer Pattern）。比如，当一个对象被修改时，则会自动通知依赖它的对象。观察者模式属于行为型模式。
+### 3.8 状态模式（State）
+### 3.9 策略模式（Strategy）
+### 3.10 模板模式（Template Method）
+### 3.11 访问者模式（Visitor）
+
++ 空对象模式（Null Object Pattern）
+
 
 ## J2EE 模式
 
@@ -522,5 +576,5 @@ int main() {
  
 ### ●Open Closed Principle：开闭原则
 
-在面向对象编程领域中，开闭原则规定“软件中的对象（类，模块，函数等等）应该**对于扩展是开放的，但是对于修改是封闭的**”，这意味着一个实体是允许在不改变它的源代码的前提下变更它的行为。该特性在产品化的环境中是特别有价值的，在这种环境中，改变源代码需要代码审查，单元测试以及诸如此类的用以确保产品使用质量的过程。遵循这种原则的代码在扩展时并不发生改变，因此无需上述的过程。
+在面向对象编程领域中，开闭原则规定“软件中的对象（类，模块，函数等等）应该 **对于扩展是开放的，但是对于修改是封闭的** ”，这意味着一个实体是允许在不改变它的源代码的前提下变更它的行为。该特性在产品化的环境中是特别有价值的，在这种环境中，改变源代码需要代码审查，单元测试以及诸如此类的用以确保产品使用质量的过程。遵循这种原则的代码在扩展时并不发生改变，因此无需上述的过程。
 

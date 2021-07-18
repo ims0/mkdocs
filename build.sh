@@ -13,10 +13,13 @@
 
 PID_FILE=daemonize.pid
 PORT=9000
+ERR_LOG=error.log
 
 if [ $# -eq 0 ]; then
     echo "daemonize run"
-    daemonize -a -e ./error.log -p $PID_FILE -l $PID_FILE -c ./  /usr/local/bin/mkdocs serve -a 127.0.0.1:$PORT
+    echo "" > $ERR_LOG
+    daemonize -a -e ./$ERR_LOG -p $PID_FILE -l $PID_FILE -c ./  /usr/local/bin/mkdocs serve -a 127.0.0.1:$PORT
+    tail -f $ERR_LOG
     exit
 fi
 

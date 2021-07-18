@@ -1,5 +1,15 @@
 site_name: Ims Docs
-theme: readthedocs
+theme:
+  name: material
+  palette:
+    primary: 'Blue Grey'
+    accent: 'Pink'
+  feature:
+    tabs: true
+  #font:
+    #text: 'Ubuntu'
+    #code: 'Ubuntu Mono'
+  language: 'zh'
 nav:
     - Home: index.md
     - DataStruct: dataStruct.md
@@ -46,3 +56,5 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tasklist
   - pymdownx.tilde
+
+

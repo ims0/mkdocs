@@ -38,7 +38,7 @@ mysql> show engines;
 
 MySQL 事务主要用于处理操作量大，复杂度高的数据。比如说，在人员管理系统中，你删除一个人员，你即需要删除人员的基本资料，也要删除和该人员相关的信息，如信箱，文章等等，这样，这些数据库操作语句就构成一个事务！
 
-+ 在 MySQL 中只有使用了 **Innodb 数据库引擎**的数据库或表才支持事务。
++ 在 MySQL 中只有使用了 **Innodb 数据库引擎** 的数据库或表才支持事务。
 + 事务处理可以用来维护数据库的完整性，保证成批的 SQL 语句要么全部执行，要么全部不执行。
 + 事务用来管理 insert,update,delete 语句
 
@@ -348,8 +348,10 @@ respectively, each lock the gap between 4 and 7 with insert intention locks prio
 
 #### 乐观锁的实现：
 
-1. CAS 实现：Java 中java.util.concurrent.atomic包下面的原子变量使用了乐观锁的一种 CAS 实现方式。
-2. 版本号控制：一般是在数据表中加上一个数据版本号 version 字段，表示数据被修改的次数。当数据被修改时，version 值会+1。当线程A要更新数据值时，在读取数据的同时也会读取 version 值，在提交更新时，若刚才读取到的 version 值与当前数据库中的 version 值相等时才更新，否则重试更新操作，直到更新成功。
+1. CAS(compare and swap) 
+    * 每次不加锁而是假设没有冲突而去完成某项操作，如果因为冲突失败就重试，直到成功为止。实现：Java 中java.util.concurrent.atomic包下面的原子变量使用了乐观锁的一种 CAS 实现方式。
+2. 版本号控制 
+    * 一般是在数据表中加上一个数据版本号 version 字段，表示数据被修改的次数。当数据被修改时，version 值会+1。当线程A要更新数据值时，在读取数据的同时也会读取 version 值，在提交更新时，若刚才读取到的 version 值与当前数据库中的 version 值相等时才更新，否则重试更新操作，直到更新成功。
 
 
 
