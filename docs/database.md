@@ -2,7 +2,7 @@
 
 [doc:Storage Engines Feature Summary](https://dev.mysql.com/doc/refman/5.7/en/storage-engines.html)
 
-## Mysql Storage Engine
+## 一，Mysql Storage Engine
 
 [Mysql数据库表的类型有哪些](https://blog.csdn.net/shaukon/article/details/85619719)
 
@@ -31,7 +31,7 @@ mysql> show engines;
    **InnoDB**：支持事务、外键等特性、数据行锁定。空间占用大，不支持全文索引等。
 
 
-## mysql Transactions
+## 二，mysql Transactions
 ![avatar](database_pic/mysql-acid.jpg)
 
 ### 什么是事务
@@ -66,15 +66,16 @@ COMMIT;
 
 
 
-### 事务的隔离级别
+## 三，隔离级别
 数据库事务的隔离级别有4个，由低到高依次为Read uncommitted(未授权读取、读未提交)、Read committed（授权读取、读提交）、Repeatable read（可重复读取）、Serializable（序列化），这四个级别可以逐个解决脏读、不可重复读、幻象读这几类问题。
 
-#### Read uncommitted(读未提交)： 
+#### Read uncommitted
 如果一个事务已经开始写数据，则另外一个事务则不允许同时进行写操作，但允许其他事务读此行数据。该隔离级别可以通过“排他写锁”实现。这样就避免了更新丢失，却可能出现脏读。也就是说事务B读取到了事务A未提交的数据。
-#### Read committed（读提交）： 
+#### Read committed
 读取数据的事务允许其他事务继续访问该行数据，但是未提交的写事务将会禁止其他事务访问该行。该隔离级别避免了脏读，但是却可能出现不可重复读。事务A事先读取了数据，事务B紧接了更新了数据，并提交了事务，而事务A再次读取该数据时，数据已经发生了改变。
-#### **Repeatable read**（可重复读取）： 
+#### **Repeatable read** 
 [MySQL可重复读隔离级别的实现原理](https://www.cnblogs.com/lmj612/p/10598971.html)
+
 
 +  原理
 
@@ -105,17 +106,12 @@ id   | name |   create_version |   delete_version
 
 ---------
 
-####  Serializable（序列化）： 
-提供严格的事务隔离。它要求事务序列化执行，事务只能一个接着一个地执行，但不能并发执行。如果仅仅通过“行级锁”是无法实现事务序列化的，必须通过其他机制保证新插入的数据不会被刚执行查询操作的事务访问到。序列化是最高的事务隔离级别，同时代价也花费最高，性能很低，一般很少使用，在该级别下，事务顺序执行，不仅可以避免脏读、不可重复读，还避免了幻像读。
+####  Serializable
+提供严格的事务隔离。它要求事务序列化执行，事务只能一个接着一个地执行，但不能并发执行。如果仅仅通过“行级锁”是无法实现事务序列化的，必须通过其他机制保证新插入的数据不会被刚执行查询操作的事务访问到。序列化是最高的事务隔离级别，同时代价也花费最高，性能很低，一般很少使用，在该级别下，事务顺序执行，不仅可以避免脏读、不可重复读，还避免了幻读。
 
+## 四，级别与幻读对应关系
 ![avatar](database_pic/隔离级别.png)
-
-隔离级别越高，越能保证数据的完整性和一致性，但是对并发性能的影响也越大。对于多数应用程序，可以优先考虑把数据库系统的隔离级别设为Read Committed。它能够避免脏读取，而且具有较好的并发性能。尽管它会导致不可重复读、幻读和第二类丢失更新这些并发问题，在可能出现这类问题的个别场合，可以由应用程序采用悲观锁或乐观锁来控制。大多数数据库的默认级别就是Read committed，比如Sql Server , Oracle。
-
-MySQL的默认隔离级别就是:可重复读Repeatable read。
-
-### [幻读](https://segmentfault.com/a/1190000016566788?utm_source=tag-newest)
-
+![avatar](database_pic/mysql-lock-class.png)
 <table>
 <thead><tr>
 <th>级别</th>
@@ -150,6 +146,28 @@ MySQL的默认隔离级别就是:可重复读Repeatable read。
 </tr>
 </tbody>
 </table>
+隔离级别越高，越能保证数据的完整性和一致性，但是对并发性能的影响也越大。对于多数应用程序，可以优先考虑把数据库系统的隔离级别设为Read Committed。它能够避免脏读取，而且具有较好的并发性能。尽管它会导致不可重复读、幻读和第二类丢失更新这些并发问题，在可能出现这类问题的个别场合，可以由应用程序采用悲观锁或乐观锁来控制。大多数数据库的默认级别就是Read committed，比如Sql Server , Oracle。
+
+MySQL的默认隔离级别就是:可重复读Repeatable read。
+
+### 幻读
+
+A phantom read occurs when, in the course of a transaction, new rows are added or removed by another transaction to the records being read.
+
+This can occur when range locks are not acquired on performing a SELECT ... WHERE operation. The phantom reads anomaly is a special case of Non-repeatable reads when Transaction 1 repeats a ranged SELECT ... WHERE query and, between both operations, Transaction 2 creates (i.e. INSERT) new rows (in the target table) which fulfil that WHERE clause.
+
+
+```sql
+Transaction 1    Transaction 2
+/* Query 1 */
+SELECT * FROM users WHERE age BETWEEN 10 AND 30;
+                /* Query 2 */
+                INSERT INTO users(id, name, age) VALUES (3, 'Bob', 27); COMMIT;
+/* Query 1 */
+SELECT * FROM users WHERE age BETWEEN 10 AND 30; COMMIT;
+```
+
+
 <p>我们可以通过以下命令 查看/设置 全局/会话 的事务隔离级别</p>
 
 ```
@@ -205,7 +223,7 @@ T1事务符合业务需求成功执行，T2干扰T1失败。
 
 -----------------------------
 
-## [mysql 锁](https://dev.mysql.com/doc/refman/5.7/en/innodb-locking.html)
+## 五，[mysql 锁(doc)](https://dev.mysql.com/doc/refman/5.7/en/innodb-locking.html)
 ![avatar](database_pic/mysql-lock.jpg)
 [mysql lock on bili](https://www.bilibili.com/video/BV1x54y1979n?from=search&seid=7051544205933286059)
 
@@ -366,7 +384,7 @@ respectively, each lock the gap between 4 and 7 with insert intention locks prio
 
 -------------------
 
-## 数据库的基本操作
+## 六，数据库的基本操作
 
 ### 修改用户密码
 `update user set authentication_string=password('123456') where user='ims';`
@@ -426,7 +444,7 @@ UPDATE table_name SET field1=new-value1, field2=new-value2
 + 修改表名
 `ALTER TABLE testalter_tbl RENAME TO alter_tbl;`
 
-## [MySQL 索引](https://www.cnblogs.com/wangsen/p/10864136.html)
+## 七，[MySQL 索引](https://www.cnblogs.com/wangsen/p/10864136.html)
 
 MySQL索引的建立对于MySQL的高效运行是很重要的，索引可以大大提高MySQL的检索速度。
 
@@ -459,6 +477,50 @@ MySQL索引的建立对于MySQL的高效运行是很重要的，索引可以大�
 + 复合索引
 即一个索引包含多个列。
 
+###聚集索引和非聚集索引
+
+#### 聚集索引
+
+数据行的物理顺序与列值（一般是主键的那一列）的逻辑顺序相同，一个表中只能拥有一个聚集索引。
+聚集索引的叶子节点存放有对应的数据节点，可以直接获取到对应的数据，
+如果不创建索引，系统会自动创建一个隐含列作为表的聚集索引。
+最好还是在创建表的时候添加聚集索引
+在经常用于查询或聚合条件的字段上建立聚集索引。这类查询条件包括 between, >, <,group by, max,min, count等。
+
+#### 非聚集索引
+
+**叶子节点存放的不是实际数据，而是指向实际数据的指针。**
+数据行的物理顺序与列值的逻辑顺序不相同，一个表中可以拥有多个非聚集索引。
+聚集索引以外的索引都是非聚集索引,细分可以分为：普通索引，唯一索引，全文索引
+
+### MyISAM和InnoDB的B+Tree实现
+
+索引是数据库引擎去实现的，在建立表的时候都会指定，数据库引擎是一种插拔式的，根据自己的选择去决定使用那个
+
+### MyISAM索引实现（非聚集）
+
+MYISAM中叶子节点的数据区域存储的是**数据记录的地址**。
+MyISAM中的主键索引和辅助引是没有区别的，其叶子节点存放的都是数据记录的地址。
+
+
+![avatar](dataStruct_pic/myISAM.png)
+
+#### InnoDB的索引实现（聚集）
+
+InnoDB中的叶子节点数据区域存储的内容和主键索引和辅助索引是有区别的：
+
+主键索引存储的就是索引+数据（index+data）
+
+![avatar](dataStruct_pic/innoDB.png)
+Innodb的主键索引要比MyISAM的主键索引查询效率要高，因为找到主键索引就找到了数据,MyISAM还有通过地址查询一次。
+
+辅助索引存储的是主键的值
+
+![avatar](dataStruct_pic/innoDB2.png)
+因此可以看出InnoDB的辅助索引会发生两次，一次通过辅助索引查询主键索引，一次是通过主键索引查询到数据。
+
+
+
 ### 主键、外键和索引的区别？
 
 #### 定义：
@@ -485,18 +547,18 @@ MySQL索引的建立对于MySQL的高效运行是很重要的，索引可以大�
 
  索引–一个表可以有多个唯一索引
 
-### 为何Mysql选择B+树
+## 八，B树与B+树
 
-#### 哈希表的两个缺点：
+### 哈希表的两个缺点：
 1. 哈希冲突
 2. 不支持范围查找
 
-#### 完全平衡二叉树
+### 完全平衡二叉树
 
 如果一个树的高度很大，如果查询的数据刚好在叶子节点那经历的磁盘Io的次数就是这个数的高度。
 所以极端情况下平衡二叉树也不是优选。
 
-#### B-Tree
+### B-Tree
 
 先说说几个概念：
 
@@ -509,7 +571,7 @@ MySQL索引的建立对于MySQL的高效运行是很重要的，索引可以大�
 但是在范围查找方面较比B+Tree差点。
 题外话：B-Tree和BTree是一种树。
 
-#### B+ Tree
+### B+ Tree
 B+树的表示要比B树要“胖”，原因在于B+树中的非叶子节点会冗余一份在叶子节点中，并且叶子节点之间用指针相连。
 
 ![avatar](dataStruct_pic/bPlusTree.png)
@@ -522,48 +584,7 @@ mysql的实现中，B+Tree是把非叶子节点中只存储索引，不存储数
 所以最后总结：
 使用B+Tree:可以提高查询索引时的磁盘IO效率，并且可以提高范围查询的效率，并且B+树里的元素也是有序的。
 
-### MyISAM和InnoDB的B+Tree实现
 
-索引是数据库引擎去实现的，在建立表的时候都会指定，数据库引擎是一种插拔式的，根据自己的选择去决定使用那个
-
-#### MyISAM索引实现（非聚集）
-
-MYISAM中叶子节点的数据区域存储的是**数据记录的地址**。
-MyISAM中的主键索引和辅助引是没有区别的，其叶子节点存放的都是数据记录的地址。
-
-
-![avatar](dataStruct_pic/myISAM.png)
-
-#### InnoDB的索引实现（聚集）
-
-InnoDB中的叶子节点数据区域存储的内容和主键索引和辅助索引是有区别的：
-
-主键索引存储的就是索引+数据（index+data）
-
-![avatar](dataStruct_pic/innoDB.png)
-Innodb的主键索引要比MyISAM的主键索引查询效率要高，因为找到主键索引就找到了数据,MyISAM还有通过地址查询一次。
-
-辅助索引存储的是主键的值
-
-![avatar](dataStruct_pic/innoDB2.png)
-因此可以看出InnoDB的辅助索引会发生两次，一次通过辅助索引查询主键索引，一次是通过主键索引查询到数据。
-
-
-###聚集索引和非聚集索引
-
-#### 聚集索引
-
-数据行的物理顺序与列值（一般是主键的那一列）的逻辑顺序相同，一个表中只能拥有一个聚集索引。
-聚集索引的叶子节点存放有对应的数据节点，可以直接获取到对应的数据，
-如果不创建索引，系统会自动创建一个隐含列作为表的聚集索引。
-最好还是在创建表的时候添加聚集索引
-在经常用于查询或聚合条件的字段上建立聚集索引。这类查询条件包括 between, >, <,group by, max,min, count等。
-
-#### 非聚集索引
-
-**叶子节点存放的不是实际数据，而是指向实际数据的指针。**
-数据行的物理顺序与列值的逻辑顺序不相同，一个表中可以拥有多个非聚集索引。
-聚集索引以外的索引都是非聚集索引,细分可以分为：普通索引，唯一索引，全文索引
 
 ## [mysql常见的优化策略](https://www.cnblogs.com/wangsen/p/10871996.html)
 

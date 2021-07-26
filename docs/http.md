@@ -150,6 +150,8 @@ cat <&11
 作者：wavesnow
 链接：https://www.jianshu.com/p/d4767b797e57
 
+[重定向状态码详解:mozilla.org](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Redirections)  
+
 + 1.0 状态码：
 
 | Status-Code    | res| 意义|
