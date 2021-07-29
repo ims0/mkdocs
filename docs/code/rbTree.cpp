@@ -18,7 +18,7 @@ struct Tree {
 };
 
 TreeNode gNilNode;
-void front(TreeNode *node) //前序遍历
+void front(TreeNode *node)
 {
   if (node != &gNilNode) {
     cout << node->key << " ";
@@ -27,7 +27,7 @@ void front(TreeNode *node) //前序遍历
   }
 }
 
-void middle(TreeNode *node) //中序遍历
+void middle(TreeNode *node)
 {
   if (node != &gNilNode) {
     middle(node->left);
@@ -36,7 +36,7 @@ void middle(TreeNode *node) //中序遍历
   }
 }
 
-void back(TreeNode *node) //后序遍历
+void back(TreeNode *node)
 {
   if (node != &gNilNode) {
     back(node->left);
@@ -171,7 +171,7 @@ void RbTransplant(Tree *tree, TreeNode *oldNode, TreeNode *newNode) {
 
 void RbDeleteFixup(Tree *tree, TreeNode *x) {
   while (x != tree->root && x->color == BLACK) {
-    if (x == x->p->left) { // x 是左子树
+    if (x == x->p->left) { // x is left subtree
       TreeNode *w = x->p->right;
       if (w->color == RED) {
         w->color = BLACK;
@@ -194,7 +194,7 @@ void RbDeleteFixup(Tree *tree, TreeNode *x) {
         LeftRotate(tree, x->p);
         x = tree->root;
       }
-    } else { // x 是右子树
+    } else { // x is right subtree
       TreeNode *w = x->p->left;
       if (w->color == RED) {
         w->color = BLACK;
@@ -317,7 +317,7 @@ void RbInsert(Tree *tree, TreeNode *z) {
 }
 
 TreeNode *AllocNode(int key) {
-  TreeNode *pNode = new TreeNode; //创建新结点
+  TreeNode *pNode = new TreeNode;
   pNode->key = key;
   pNode->p = NULL;
   pNode->left = NULL;
@@ -360,3 +360,4 @@ int main() {
   RbBackDelete(tree.root);
   return 0;
 }
+

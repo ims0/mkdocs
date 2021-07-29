@@ -200,7 +200,7 @@ type-id 必须是一个指针、引用、算术类型、函数针或者成员指
 
 ##  成员初始化列表的概念
 
-因为使用成员初始化列表进行初始化的话，会直接使用传入参数的**拷贝构造函数**进行初始化，省去了一次执行传入参数的默认构造函数的过程，否则会调用一次传入参数的默认构造函数。所以使用成员初始化列表效率会高一些。
+因为使用成员初始化列表进行初始化的话，会直接使用传入参数的 **拷贝构造函数** 进行初始化，省去了一次执行传入参数的默认构造函数的过程，否则会调用一次传入参数的默认构造函数。所以使用成员初始化列表效率会高一些。
 
 另外，有三种情况是必须使用成员初始化列表进行初始化的：
 
@@ -208,23 +208,59 @@ type-id 必须是一个指针、引用、算术类型、函数针或者成员指
 2. 引用类型
 3. 没有默认构造函数的对象必须使用成员初始化列表的方式进行初始化
 
-```
-struct Base{
-    //Base()=default; //显式要求生成默认构造函数,否则存在其它构造函数时不生成。
-    Base(int a):a_(a){}
-    int a_;
+《C++ Primer》中提到在以下三种情况下需要使用初始化成员列表：   
+
+1. 情况一、成员对象需要调有参构造函数； 
+2. 情况二、父类部分需要调有参构造函数；
+3. 情况三、需要初始化 **const或引用** 成员数据；
+
+原文链接：https://blog.csdn.net/sinat_20265495/article/details/53670644
+```cpp
+#include <iostream>
+using namespace std;
+/*第一类情况，成员对象需要调有参构造函数*/
+class Test {
+public:
+  Test(int) { cout << "Test" << endl; }
+
+private:
+  int x;
+};
+class Mytest {
+public:
+  Mytest() : test(1) { //初始化
+    cout << "Mytest" << endl;
+  }
+
+private:
+  Test test;
+};
+/*第二类情况，父类部分需要调有参构造函数*/
+class Test1 {
+public:
+  Test1() { cout << "default Test" << endl; };
+  Test1(int x) {
+    int_x = x;
+    cout << "arg Test" << endl;
+  };
+  void show() { cout << "base int:" << int_x << endl; }
+
+private:
+  int int_x;
+};
+class Mytest1 : public Test1 {
+public:
+  Mytest1() {
+    Test1(10).show(); // 函数内部只是生成临时对象，并不能修改子类对象的父类成员
+  }
 };
 
-struct Derived{
-    Derived(int a):b(a){}
-    Base b;
-};
-int main()
-{
-    //Base b; //error
-    Base b(1);
-    return 0;
+int main(int argc, char *argv[]) {
+  Mytest1 test;
+  test.show();
+  return 0;
 }
+
 ```
 
 ## [C++11 std::move和std::forward](https://www.jianshu.com/p/b90d1091a4ff)
@@ -236,5 +272,124 @@ std::move()和std::forward()对比
 + std::move和std::forward只不过就是执行类型转换的两个函数；std::move没有move任何东西，std::forward没有转发任何东西。在运行期，它们没有做任何事情。它们没有产生需要执行的代码，一byte都没有。
 + std::forward<T>()不仅可以保持左值或者右值不变，同时还可以保持const、Lreference、Rreference、validate等属性不变；
 
+```cpp
+#include <iostream>
+#include <memory>
+#include <utility>
+
+using namespace std;
+
+void fun(int &x) { cout << "lvalue ref" << endl; }
+void fun(int &&x) { cout << "rvalue ref" << endl; }
+void fun(const int &x) { cout << "const lvalue ref" << endl; }
+void fun(const int &&x) { cout << "const rvalue ref" << endl; }
+
+template <typename T> void tmpwrap(T &&t) { fun(t); }
+template <typename T> void tmpwrap_forward(T &&t) { fun(std::forward<T>(t)); }
+struct A {
+  A(int &&n) { std::cout << "rvalue overload, n=" << n << "\n"; }
+  A(int &n) { std::cout << "lvalue overload, n=" << n << "\n"; }
+  A(const int &&n) { std::cout << "const rvalue overload, n=" << n << "\n"; }
+  A(const int &n) { std::cout << "const lvalue overload, n=" << n << "\n"; }
+};
+template <class U> A make_A(U &&u) {
+  cout << "no forward:" << endl;
+  return A(u);
+}
+template <class U> A make_A_forward(U &&u) {
+  cout << "with forward:" << endl;
+  return A(std::forward<U>(u));
+}
+int main() {
+  const int a = 2;
+  cout << "1.传入的是rvalue ref。（字面量，函数返回值，lamda函数）" << endl;
+  cout << "2.使用完美转义：", tmpwrap(10);
+  cout << "3.不使用完美转义：", tmpwrap_forward(10);
+  cout << "======================================================" << endl;
+  cout << "1.传入的是lvalue re。（所有具名变量，可以取地址的值）" << endl;
+  cout << "2.使用farword()：", tmpwrap(a);
+  cout << "3.不使用完美转义：", tmpwrap_forward(a);
+  cout << "======================================================" << endl;
+  cout << "1.传入的是rvalue "
+          "ref。（move()告诉编译器将a设置为左值，减少不必要的拷贝）"
+       << endl;
+  cout << "2.使用farword()：", tmpwrap(move(a));
+  cout << "3.不使用完美转义：", tmpwrap_forward(move(a));
+
+  make_A(1);
+  make_A(a);
+  make_A_forward(1);
+  make_A_forward(a);
+  return 0;
+}
 
 
+
+```
+
+## 布局new
+
+布局 new和其他普通的new不同的是，它在括号里多了另外一个参数。  
+比如： `pi = new (ptr) int; //placement new`  
+括号里的参数是一个指针，它指向一个内存缓冲器，placement new将在这个缓冲器上分配一个对象。Placement new的返回值是这个被构造对象的地址(比如扣号中的传递参数)。placement new主要适用于：在对时间要求非常高的应用程序中，因为这些程序分配的时间是确定的；长时间运行而不被打断的程序；以及执行一个垃圾收集器(garbage collector)。
+使用方法  
+在很多情况下，placement new的使用方法和其他普通的new有所不同。这里提供了它的使用步骤。  
+
+```cpp
+#include <iostream>
+#include <new>
+using namespace std;
+class base {
+  int a;
+
+public:
+  base(int aa) : a(aa) {}
+  base() = default;
+  int geta() { return a; }
+  ~base() { cout << "~" << endl; }
+};
+
+int main() {
+  char buffer[100];
+  base *p = new (buffer) base(1);
+  cout << p->geta() << endl;
+  p->~base();
+  // delete []buffer;
+  return 0;
+}
+```
+
+第一步  缓存提前分配
+为了保证通过placement new使用的缓存区的memory alignmen(内存队列)正确准备，使用普通的new来分配它：
+class Task ;
+char * buff = new [sizeof(Task)]; //分配内存
+(请注意auto或者static内存并非都正确地为每一个对象类型排列，所以，你将不能以placement new使用它们。)  
+
+第二步：对象的分配
+在刚才已分配的缓存区调用placement new来构造一个对象。
+Task *ptask = new(buff) Task  
+
+第三步：使用
+按照普通方式使用分配的对象：
+ptask->suspend();
+ptask->resume();
+//...
+
+第四步：对象的毁灭  
+一旦你使用完这个对象，你必须调用它的析构函数来毁灭它。按照下面的方式调用析构函数：
+ptask->~Task(); //调用外在的析构函数
+第五步：释放  
+你可以反复利用缓存并给它分配一个新的对象（重复步骤2，3，4）如果你不打算再次使用这个缓存，你可以象这样释放它：
+delete [] buff;
+跳过任何步骤就可能导致运行时间的崩溃，内存泄露，以及其它的意想不到的情况。如果你确实需要使用placement new，请认真遵循以上的步骤。
+
+此外，如果在buff 上创建了两个对象，那么调用析构函数的顺序和创建对象的顺序要反过来.
+```cpp
+classA *p1=new(buffer)classA("22",22);
+clasA *p2=new (buffer)classA("221",221);
+.
+.
+p2->~classA();
+p1->~classA();
+delete[]buffer;
+```

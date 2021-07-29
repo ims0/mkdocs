@@ -3,7 +3,7 @@
 ## 查找算法
 
 ### 二叉查找(lgn)
-```
+```cpp
 int binarySearch(int arr[], int start, int end, int target) {
   while (start <= end) { // 注意
     int mid = (start + end) / 2;
@@ -42,7 +42,7 @@ int BinSearch(int a[], int start, int end, int val) {
 ### 插入排序：直接插入排序
 初始有序数列长度为1，紧跟有序数列的一个元素作为要插入的元素，
 如果比有序数列的最后一位大，则直接增加数列长度，否则在有序数列中找到合适的位置插入.
-```
+```cpp
 void insert(int V[], int len) 
 {
   for (int curOrderLen = 1; curOrderLen < len; curOrderLen++) {
@@ -57,7 +57,7 @@ void insert(int V[], int len)
 ### 插入排序：希尔排序 
 
 [希尔排序--简单易懂图解](https://blog.csdn.net/qq_39207948/article/details/80006224)
-```
+```cpp
 //设置不同的gap，调用插入排序
 void insert_with_gap(int V[], int len, int gap) 
 {
@@ -93,7 +93,7 @@ void shell(int arr[], int n) {
 ### 交换排序：冒泡
 
 大数向后移动
-```
+```cpp
 void bubble(int v[], int n) 
 {
   for (int i = 1; i < n; i++) // i循环决定了冒泡的趟数是 n-1
@@ -133,7 +133,7 @@ void bubble(int v[], int n)
 优化3：优化递归操作
 
 优化4：使用并行或多线程处理子序列
-```
+```cpp
 
 void quickSort(int arr[], int left, int right) {
   if (left < right) {
@@ -162,7 +162,7 @@ void quickSort(int arr[], int left, int right) {
 
 ### 选择排序：直接选择排序
 在剩余无序队列中，找出最小的元素放在最有序队列的末尾，逐步扩大有序队列长度
-```
+```cpp
 void select_sort(int v[], int len) 
 {
   for (int i = 0; i < len - 1; i++) {
@@ -201,7 +201,7 @@ heapsort 时间复杂度是O(nlgn),具有空间原址性，常数个额外空间
 由于堆的上浮下沉时间都是O(lgn),
 所以优先队列的入队出队也是O(lgn)
 
-```
+```cpp
 static void heap_print(int arr[], int size) {
   int num = 0;
   for (int layer = 0; num < size; ++layer) {
@@ -255,7 +255,7 @@ void heap_sort(int arr[], int len) {
 ###  归并排序
 ![avatar](dataStruct_pic/merge_sort.gif)
 
-```
+```cpp
 void Merge(int arr[], int reg[], int start, int end) {
   if (start >= end)
     return;
@@ -301,7 +301,7 @@ void MergeSort(int arr[], const int len) {
 ###  基数排序
 
 
-```
+```cpp
 int maxbit(int data[], int n) //辅助函数，求数据的最大位数
 {
   int d = 1; //保存最大的位数
