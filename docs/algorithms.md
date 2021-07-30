@@ -134,7 +134,6 @@ void bubble(int v[], int n)
 
 优化4：使用并行或多线程处理子序列
 ```cpp
-
 void quickSort(int arr[], int left, int right) {
   if (left < right) {
     int i = left;
@@ -157,7 +156,62 @@ void quickSort(int arr[], int left, int right) {
     quickSort(arr, i + 1, right);
   }
 }
+```
+mutli thread
+```cpp
+#include <iostream>
+#include <thread>
+using namespace std;
 
+const int threadNum = 3;
+std::thread threads[threadNum];
+int threadCnt = 0;
+void print(int V[], int len) {
+  for (int i = 0; i < len; i++) {
+    printf("%d ", V[i]);
+  }
+  printf("\n");
+}
+void quickSort(int arr[], int left, int right) {
+  if (left < right) {
+    int i = left;
+    int j = right;
+    int boundary = arr[left];
+    while (i < j) {
+      while (i < j && arr[j] >= boundary)
+        j--;
+      if (i < j)
+        arr[i++] = arr[j];
+      while (i < j && arr[i] < boundary)
+        i++;
+      if (i < j)
+        arr[j--] = arr[i];
+    }
+    arr[i] = boundary;
+    if (threadCnt < threadNum) {
+      threads[threadCnt++] = std::thread(quickSort, arr, left, i - 1);
+    } else
+      quickSort(arr, left, i - 1);
+
+    if (threadCnt < threadNum) {
+      threads[threadCnt++] = std::thread(quickSort, arr, i + 1, right);
+    } else
+      quickSort(arr, i + 1, right);
+  }
+}
+#define ARRAY 49, 38, 65, 97, 76, 13, 27, 49, 1
+int main() {
+  int arr[] = {ARRAY};
+  const int len = sizeof(arr) / sizeof(int);
+  print(arr, len);
+  int ii = 0;
+  threads[threadCnt++] = std::thread(quickSort, arr, ii, len - 1);
+  for (int i = 0; i < threadNum; ++i)
+    threads[i].join();
+
+  print(arr, len);
+  return 0;
+}
 ```
 
 ### 选择排序：直接选择排序
@@ -358,6 +412,28 @@ void radixsort(int data[], int n) //基数排序
 作者：zhipingChen
 链接：https://www.jianshu.com/p/204ed43aec0c
 
+## 单链表排序
+
+### 冒泡排序
+
+冒泡排序的基本思想就是对于给定的n个元素，从第一个元素开始，依次对相邻的两个元素进行比较，当前面的元素大于后面的元素时，交换其位置，进行一轮比较和换位后，n个元素中最大的数将位于第n位，然后对前（n-1）个元素进行第二轮比较，重复该过程，直到进行比较的元素只剩下一个。
+
+### 快速排序
+单链表的快速排序和数组的快速排序在基本细想上是一致的，以从小到大来排序单链表为例，都是选择一个支点，然后把小于支点的元素放到左边，把大于支点的元素放到右边。但是，由于单链表不能像数组那样随机存储，和数组的快排序相比较，还是有一些需要注意的细节：
+
+1. 支点的选取，由于不能随机访问第K个元素，因此每次选择支点时可以取待排序那部分链表的头指针。
+
+2. 遍历链表方式，由于不能从单链表的末尾向前遍历，因此使用两个指针分别向前向后遍历的策略实效，可以可以采用一趟遍历的方式将较小的元素放到单链表的左边。具体方法为：
+
+    1)定义两个指针pSlow, pFast,其中pSlow指单链表头结点，pFast指向单链表头结点的下一个结点;
+
+    2)使用pFast遍历单链表，每遇到一个比支点小的元素，就和pSlow进行数据交换,然后令pSlow=pSlow->next。
+
+3. 交换数据方式，直接交换链表数据指针指向的部分，不必交换链表节点本身。
+
+快排这里还是写了两个函数，Partition这个函数，返回的支点结点的前一个位置。
+
+[singleLinkSort](code/singleLinkSort.cpp)
 
 ##  判判断一个链表是否有环，如何找到这个环的起点
 给定一个单链表，只给出头指针h：

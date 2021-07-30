@@ -15,10 +15,12 @@
 + TASK_STOPPED(停止) ---停止执行，没有运行也不能运行，这个状态发生在收到:SIGSTOP,SIGTSTP,SIGTTIN,SIGTTOU 等信号的时候，在调试期间收到任何信号都会让程序进入这个状态。
 
 ### 僵尸进程
-
+子进程已经退出，父进程未退出，也没有处理子进程退出的信号，则子进程的task_struct不会销毁。
 目的是:维护子进程信息，供父进程后续获取，信息包括（PID，终止状态，资源利用），有些UNIX的ps命令的COMMAND栏：以`<defunct>`表示僵尸进程，
 有些linux系统state栏，以`Z`表示僵尸进程。
 
+### 孤儿进程
+父进程先于子进程退出
 
 ## 协程
 协程是一种用户态的轻量级线程。本篇主要研究协程的C/C++的实现。
@@ -519,18 +521,17 @@ SYNOPSIS
 
 ## 内存泄漏排查
 
-### 一、重载new/delete操作符
+### 一、c++ 重载new/delete操作符
 重载new/delete操作符，用list或者map记录对内存的使用情况。new一次，保存一个节点，delete一次，就删除节点。
 最后检测容器里是否还有节点，如果有节点就是有泄漏。也可以记录下哪一行代码分配的内存被泄漏。
 类似的方法：在每次调用new时加个打印，每次调用delete时也加个打印。
+
 ### 二、使用mtrace/muntrace
-linux 提供mtrace/muntrace来检测程序是否有内存泄露。一般来说要检测哪一段代码是否有内存泄露，就可以用这一对函数包起来。
-
-每一对malloc-free的执行，若每一个malloc都有相应的free，则代表没有内存泄露，对于任何非malloc/free情況下所发生的内存泄露问题，mtrace并不能找出来。
-
+linux 提供mtrace/muntrace来检测程序是否有内存泄露。一般来说要检测哪一段代码是否有内存泄露，就可以用这一对函数包起来。 
+每一对malloc-free的执行，若每一个malloc都有相应的free，则代表没有内存泄露，对于任何非malloc/free情況下所发生的内存泄露问题，mtrace并不能找出来。   
 在使用mtrace之前，先要设置一个环境变量“MALLOC_TRACE”来指定mtrace检测结果的生成文件名。通过此文件就可以看出代码是否有内存泄露。
-```
 
+```cpp
 #include <mcheck.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -554,13 +555,66 @@ int main(void) {
 就会将output_file_name的內容转化成能被理解的语句。
 
 ### 三、查看进程maps表
-
 在实际调试过程中，怀疑某处发生了内存泄漏，可以查看该进程的maps表，看进程的堆或mmap段的虚拟地址空间是否持续增加。如果是，说明可能发生了内存泄漏。如果mmap段虚拟地址空间持续增加，还可以看到各个段的虚拟地址空间的大小，从而可以确定是申请了多大的内存。
+
+进程分配内存有两种方式，分别由两个系统调用完成：brk和mmap（不考虑共享内存）。
+  1、brk是将数据段(.data)的最高地址指针_edata往高地址推 
+  2、mmap是在进程的虚拟地址空间中（堆和栈中间，称为文件映射区域的地方）找一块空闲的虚拟内存。
+  3. malloc小于128k的内存，使用brk分配内存
+cat /proc/$pid/maps
+[heap] 对应的行是data数据段的范围，如果使用brk调用，右侧的值会增加
+[heap] 下面一个无标签的行是mmap分配内存的范围，左侧值随着mmap的调用减小
+```cpp
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <malloc.h>
+#define SIZE 1024 * 100
+
+int main() {
+  //在进程启动时候，加入以下两行代码：
+  mallopt(M_MMAP_MAX, 0); // 禁止malloc调用mmap分配内存
+  mallopt(M_TRIM_THRESHOLD, -1); // 禁止内存紧缩
+
+  printf("pid: %d\n", getpid());
+  void *p = NULL;
+  while (1) {
+    printf("cur:%p\n", sbrk(0));
+    p = malloc(SIZE);
+    sleep(5);
+  }
+  return 0;
+}
+```
 
 ### 四、valgrind工具
 
-### [基于链表的C语言堆内存检测](https://blog.csdn.net/hanyin7/article/details/38377743)
+### 五，[使用宏替换malloc](https://blog.csdn.net/hanyin7/article/details/38377743)
 本文基于链表实现C语言堆内存的检测机制，可检测内存泄露、越界和重复释放等操作问题。
 本文仅提供即视代码层面的检测机制，不考虑编译链接级的注入或钩子。此外，该机制暂未考虑并发保护。
+
+### 六 使用preload 注入钩子替换malloc
+```cpp
+//can't use those in some func which use malloc (such printf) for avoid recursion
+void* malloc(size_t size)
+{
+    malloc_cnt++;
+    mallocp = (void *(*)(size_t))dlsym (RTLD_NEXT, "malloc");
+    return (*mallocp)(size);
+}
+void free(void *ptr)
+{
+    printf("%s:malloc_cnt:%d\n", __func__,malloc_cnt);
+    freep = (void (*)(void *))dlsym (RTLD_NEXT, "free");
+    def_freep = (void (*)(void *))dlsym (RTLD_DEFAULT, "free");
+    printf("%s:def_freep:%p\n", __func__,def_freep);
+    printf("%s:freep:%p\n", __func__,freep);
+    malloc_cnt--;
+    return (*freep)(ptr);
+}
+
+$export LD_LIBRARY_PATH=./;LD_PRELOAD=./libredefine.so ./main
+```
 
 
