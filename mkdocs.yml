@@ -19,6 +19,7 @@ nav:
     - Tcp/Ip: tcp_ip.md
     - IPC: IPC.md
     - linux: linux.md
+    - Sys: sys.md
     - DesignPattern : designPattern.md
     - CppVirtualFun: cppVirtualFun.md
     - CPP: cpp.md

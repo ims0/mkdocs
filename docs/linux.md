@@ -588,7 +588,23 @@ int main() {
 }
 ```
 
-### 四、valgrind工具
+### 四、valgrind工具, 以及gcc 提供的ASan
+[AddressSanitizer](https://github.com/google/sanitizers/wiki/AddressSanitizer) is a part of LLVM starting with version 3.1 and a part of GCC starting with version 4.8  
+AddressSanitizer (aka ASan) is a memory error detector for C/C++. It finds:   
+
+1. Use after free (dangling pointer dereference)
+1. Heap buffer overflow
+1. Stack buffer overflow
+1. Global buffer overflow
+1. Use after return
+1. Use after scope
+1. Initialization order bugs
+1. Memory leaks
+
+#### 使用方式加上编译选项即可
+```
+gcc -fsanitize=address -g memgcc.c && ./a.out
+```
 
 ### 五，[使用宏替换malloc](https://blog.csdn.net/hanyin7/article/details/38377743)
 本文基于链表实现C语言堆内存的检测机制，可检测内存泄露、越界和重复释放等操作问题。
