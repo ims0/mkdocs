@@ -17,9 +17,10 @@ nav:
     - Database: database.md
     - Http: http.md
     - Tcp/Ip: tcp_ip.md
+    - NetProgram: net_program.md
     - IPC: IPC.md
     - linux: linux.md
-    - Sys: sys.md
+    - System: sys.md
     - DesignPattern : designPattern.md
     - CppVirtualFun: cppVirtualFun.md
     - CPP: cpp.md
@@ -30,6 +31,7 @@ nav:
     - ThreadSched: thread_sched.md
     - Listen: listen.md
     - Mutex: mutex.md
+    - Netfilter: netfilter.md
     - BackQuestion: back-end.md
 
 markdown_extensions:

@@ -646,7 +646,14 @@ select id from t where name like ‘abc%’
 
 [关系型数据库和非关系型数据库](http://my.oschina.net/u/1773689/blog/364548)
 
+### MySQL日志文件分类
 
+1. 错误日志(Error Log)
+2. 二进制日志(Binary Log & Binary Log Index)
+3. 通用查询日志(query log)
+4. 慢查询日志(slow query log)
+5. Innodb的在线 redo 日志(innodb redo log)
+6. 更新日志(update log)
 ## mysql 查询过程
 ![avatar](database_pic/mysql_lookup.png)
 

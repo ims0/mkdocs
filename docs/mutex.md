@@ -153,12 +153,176 @@ mutex_lock为了提高性能，分为三种路径处理，优先使用快速和�
 
 
 ## 参考
-Generic Mutex Subsystem
-
-MCS locks and qspinlocks
-
-ref:https://mp.weixin.qq.com/s?__biz=MzI3NzA5MzUxNA==&mid=2664610248&idx=1&sn=360b3aacd112a6db8005672d5e001788&chksm=f04d942dc73a1d3b39fbeb58c6c0cb5287f339b2f10c780dac0c30e7919564b51311af343991&scene=132#wechat_redirect
+* Generic Mutex Subsystem
+* MCS locks and qspinlocks
+* [Linux Mutex机制分析,微信原文]( ref:https://mp.weixin.qq.com/s?__biz=MzI3NzA5MzUxNA==&mid=2664610248&idx=1&sn=360b3aacd112a6db8005672d5e001788&chksm=f04d942dc73a1d3b39fbeb58c6c0cb5287f339b2f10c780dac0c30e7919564b51311af343991&scene=132#wechat_redirect)
 
 
+## 4. C mutex API
+### 4.1 合法类型
+合法的类型属性值有：
 
+1. PTHREAD_MUTEX_NORMAL；
+1. PTHREAD_MUTEX_ERRORCHECK；
+1. PTHREAD_MUTEX_RECURSIVE；
+1. PTHREAD_MUTEX_DEFAULT。
 
+类型说明：
+
+* PTHREAD_MUTEX_NORMAL
+
+这种类型的互斥锁不会自动检测死锁。如果一个线程试图对一个互斥锁重复锁定，将会引起这个线程的死锁。如果试图解锁一个由别的线程锁定的互斥锁会引发不可预料的结果。如果一个线程试图解锁已经被解锁的互斥锁也会引发不可预料的结果。
+
+* PTHREAD_MUTEX_ERRORCHECK
+
+这种类型的互斥锁会自动检测死锁。如果一个线程试图对一个互斥锁重复锁定，将会返回一个错误代码。如果试图解锁一个由别的线程锁定的互斥锁将会返回一个错误代码。如果一个线程试图解锁已经被解锁的互斥锁也将会返回一个错误代码。
+
+* PTHREAD_MUTEX_RECURSIVE
+
+如 果一个线程对这种类型的互斥锁重复上锁，不会引起死锁，一个线程对这类互斥锁的多次重复上锁必须由这个线程来重复相同数量的解锁，这样才能解开这个互斥 锁，别的线程才能得到这个互斥锁。如果试图解锁一个由别的线程锁定的互斥锁将会返回一个错误代码。如果一个线程试图解锁已经被解锁的互斥锁也将会返回一个 错误代码。这种类型的互斥锁只能是进程私有的（作用域属性为PTHREAD_PROCESS_PRIVATE）。
+
+* PTHREAD_MUTEX_DEFAULT
+
+这种类型的互斥锁不会自动检测死锁。如果一个线程试图对一个互斥锁重复锁定，将会引起不可预料的结果。如果试图解锁一个由别的线程锁定的互斥锁会引发不可预料的结果。如果一个线程试图解锁已经被解锁的互斥锁也会引发不可预料的结果。POSIX标准规定，对于某一具体的实现，可以把这种类型的互斥锁定义为其他类型的互斥锁。
+
+### 4.2 代码实例
+
+#### pthread_mutexattr_settype
+通过设置mutex的属性，设置检测死锁，递归属性
+
+```c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <string.h>
+
+int main(int argc , char *args[]){
+        //定义互斥锁
+        pthread_mutex_t mutex; 
+        if(argc < 2){
+                printf("input mutex type\n");
+                return -1;
+        }
+        //定义互斥锁属性
+        pthread_mutexattr_t mutexattr;
+        //初始化互斥锁属性
+        pthread_mutexattr_init(&mutexattr);
+        //设置互斥锁类型，error:检错互斥锁，normal:标准互斥锁，recursive:递归互斥锁
+        if(!strcmp(args[1] , "error")){
+                pthread_mutexattr_settype(&mutexattr , PTHREAD_MUTEX_ERRORCHECK);
+                printf("set error succes\n");
+        }else if(!strcmp(args[1], "normal")){
+                pthread_mutexattr_settype(&mutexattr , PTHREAD_MUTEX_NORMAL);
+                printf("set normal succes\n");
+        }else if(!strcmp(args[1], "recursive")){
+                pthread_mutexattr_settype(&mutexattr , PTHREAD_MUTEX_RECURSIVE);
+                printf("set recursive\n");
+        }
+        //初始化互斥锁
+        pthread_mutex_init(&mutex , &mutexattr);
+        //第一次上锁
+        if(pthread_mutex_lock(&mutex) != 0){
+                printf("lock failed\n");
+        }else{
+                printf("lock succes\n");
+        }
+        //第二次上锁
+        if(pthread_mutex_lock(&mutex) != 0){
+                printf("lock failed\n");
+        }else{
+                printf("lock succes\n");
+        }
+        //加锁几次，同样也要释放几次
+        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex);
+        //销毁互斥锁属性和互斥锁
+        pthread_mutexattr_destroy(&mutexattr);
+        pthread_mutex_destroy(&mutex);
+        return 0;
+}
+```
+#### pthread_mutex_timedlock
+通过函数设置超时锁
+
+```c
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define perror(s) printf("\n" s "\n");
+pthread_mutex_t mutex;
+
+void *func2(void *arg) {
+  int temp = *(int *)arg;
+  int ret;
+  struct timespec timeoutTime;
+  clock_gettime(CLOCK_REALTIME, &timeoutTime);
+  timeoutTime.tv_sec += temp;
+  printf("\nstart wait time %ds\n", temp);
+  ret = pthread_mutex_timedlock(&mutex, &timeoutTime);
+  if (ret != 0) {
+    perror("lock failed for Wait timed out");
+    return NULL;
+  }
+  printf("lock succ then unlock\n");//no run
+  pthread_mutex_unlock(&mutex);
+  return NULL;
+}
+
+int main() {
+
+  int ret;
+  //初始化互斥锁
+  pthread_mutex_init(&mutex, NULL);
+  if (pthread_mutex_lock(&mutex) != 0) {
+    printf("main lock failed\n");
+  } else {
+    printf("main lock success\n");
+  }
+  pthread_t thread1;
+  const int temp = 5;
+  ret = pthread_create(&thread1, NULL, func2, (void *)&temp);
+  if (ret != 0) {
+    perror("Unable to  create thread");
+    pthread_mutex_unlock(&mutex);
+    return -1;
+  }
+  pthread_join(thread1, NULL);
+  //主函数等线程加锁超时返回后解锁
+  pthread_mutex_unlock(&mutex);
+}
+
+```
+
+## 5. CPP mutex API
+[线程支持库cpp online doc](https://zh.cppreference.com/w/cpp/thread)
+
+### 5.1 锁类型
+互斥算法避免多个线程同时访问共享资源。这会避免数据竞争，并提供线程间的同步支持。
+
+#### 定义于头文件 <mutex>
+1. mutex (C++11) 提供基本互斥设施 (类)
+2. timed_mutex (C++11) 提供互斥设施，实现有时限锁定 (类)
+3. recursive_mutex (C++11) 提供能被同一线程递归锁定的互斥设施 (类)
+4. recursive_timed_mutex (C++11) 提供能被同一线程递归锁定的互斥设施，并实现有时限锁定 (类)
+
+#### 定定义于头文件 <shared_mutex>
+1. shared_mutex (C++17) 提供共享互斥设施 (类)
+2. shared_timed_mutex (C++14) 提供共享互斥设施并实现有时限锁定 (类)
+
+### 5.2 通用互斥管理
+
+定义于头文件 <mutex>
+
++ lock_guard (C++11) 实现严格基于作用域的互斥体所有权包装器 (类模板)
++ unique_lock (C++11) 实现可移动的互斥体所有权包装器 (类模板)
++ shared_lock (C++14) 实现可移动的共享互斥体所有权封装器 (类模板)
++ scoped_lock (C++17) 用于多个互斥体的免死锁 RAII 封装器 (类模板)
+ 
++ defer_lock_t(C++11)
++ try_to_lock_t(C++11)
++ adopt_lock_t(C++11) 用于指定锁定策略的标签类型 (类)
++ defer_lock(C++11)
++ try_to_lock(C++11)
++ adopt_lock(C++11) 用于指定锁定策略的标签常量 (常量)
