@@ -392,6 +392,40 @@ ROLLBACK;
 
 ## 六，数据库的基本操作
 
+### 创建用户与授权
+
++ username：你将创建的用户名
++ host：指定该用户在哪个主机上可以登陆，如果是本地用户可用localhost，如果想让该用户可以从任意远程主机登陆，可以使用通配符%
++ password：该用户的登陆密码，密码可以为空，如果为空则该用户可以不需要密码登陆服务器
+
+```sql
+CREATE USER 'username'@'host' IDENTIFIED BY 'password';
+
+CREATE USER 'dog'@'localhost' IDENTIFIED BY '123456';
+CREATE USER 'pig'@'192.168.1.101_' IDENDIFIED BY '123456';
+CREATE USER 'pig'@'%' IDENTIFIED BY '123456';
+CREATE USER 'pig'@'%' IDENTIFIED BY '';
+CREATE USER 'pig'@'%';
+```
+授权
+
++ privileges：用户的操作权限，如SELECT，INSERT，UPDATE等，如果要授予所的权限则使用ALL
++ databasename：数据库名
++ tablename：表名，如果要授予该用户对所有数据库和表的相应操作权限则可用*表示，如*.*
+
+```sql
+GRANT privileges ON databasename.tablename TO 'username'@'host'
+GRANT SELECT, INSERT ON test.user TO 'pig'@'%';
+GRANT ALL ON *.* TO 'pig'@'%';
+
+CREATE USER 'remote'@'%' IDENTIFIED BY '123456';
+GRANT ALL  ON test_db.* TO 'repl'@'%';
+
+ALTER USER 'repl'@'%' IDENTIFIED WITH mysql_native_password BY '123456';
+#刷新系统权限表的配置
+FLUSH PRIVILEGES;
+
+```
 ### 修改用户密码
 `update user set authentication_string=password('123456') where user='ims';`
 
@@ -400,7 +434,8 @@ ROLLBACK;
 `CREATE DATABASE 数据库名;`
 
 ### 创建表
-```
+
+```sql
 CREATE TABLE test(
     id INT NOT NULL AUTO_INCREMENT  PRIMARY KEY ,
     title VARCHAR(100) NOT NULL,
@@ -408,6 +443,7 @@ CREATE TABLE test(
     submission_date DATE
     )DEFAULT CHARSET=utf8;
 ```
+
 + 显示表信息命令: `show create table test`, 类似`desc`,只是前者按命令格式。
 + 修改表引擎的命令 : `alter table test engine = innodb;` 
 
@@ -418,19 +454,19 @@ InnoDB 主键使用的是聚簇索引，MyISAM 不管是主键索引，还是二
 
 ### 插入数据
 
-```
+```sql
 INSERT INTO table_name ( field1, field2,...fieldN ) VALUES ( value1, value2,...valueN );
 ```
 
 ### 删除数据
-```
+```sql
 DELETE FROM table_name [WHERE Clause]
 DELETE FROM runoob_tbl WHERE runoob_id=3;
 ```
 
 ### 更新数据
 
-```
+```sql
 UPDATE table_name SET field1=new-value1, field2=new-value2
 [WHERE Clause]
 ```
@@ -449,6 +485,110 @@ UPDATE table_name SET field1=new-value1, field2=new-value2
 
 + 修改表名
 `ALTER TABLE testalter_tbl RENAME TO alter_tbl;`
+
+
+### 主从复制
+#### Master配置
+```sql
+//192.168.0.106是slave从机的IP
+GRANT REPLICATION SLAVE ON *.* to 'root'@'192.168.0.106' identified by 'Java@1234';
+//192.168.0.107是slave从机的IP
+GRANT REPLICATION SLAVE ON *.* to 'root'@'192.168.0.107' identified by 'Java@1234';
+//刷新系统权限表的配置
+FLUSH PRIVILEGES;
+```
+
+#### Slave配置
+Slave配置相对简单一点。和Master一样，找到/etc/my.cnf配置文件，增加以下配置：
+```sql
+# 不要和其他mysql服务id重复即可
+server-id=106
+```
+
+进入到mysql后，再输入以下命令：
+```sql
+CHANGE MASTER TO 
+MASTER_HOST='imsweb.club',//主机IP
+MASTER_USER='repl',//之前创建的用户账号
+MASTER_PASSWORD='123456',//之前创建的用户密码
+MASTER_LOG_FILE='mysql-bin.000003',//master主机的binlog日志名称
+MASTER_LOG_POS=0,//binlog日志偏移量
+master_port=3306;//端口
+```
+
+还没完，设置完之后需要启动：
+
+```sql
+# 启动slave服务
+start slave;
+```
+
+启动完之后怎么校验是否启动成功呢？使用以下命令：
+```sql
+show slave status\G;
+```
+
+### 日志文件
+
+#### 错误日志
+对mysql的启动，运行，关闭进行记录。mysql DBA在遇到问题时候，应该查看该文件定位问题。
+查看错误日志的文件名的命令是
+```sql
+mysql> show variables like 'log_error'\G;
+*************************** 1. row ***************************
+Variable_name: log_error
+        Value: ./MACdeMacBook.local.err
+1 row in set (0.00 sec)
+```
+
+#### 二进制日志
+作用:恢复(point-in-time)，复制（主从mysql），审计（安全）
+
+执行对数据库更改的操作，不包括SELECT,SHOW这类。其它操作，就算没有导致数据发生变化也可能写入二进制日志。
+
+二进制日志的路径是数据库所在目录（datadir);
+```sql
+mysql> show variables like 'datadir'\G;
+*************************** 1. row ***************************
+Variable_name: datadir
+        Value: /usr/local/var/mysql/
+1 row in set (0.00 sec)
+
+#在mysql中使用shell查看
+mysql> system ls /usr/local/var/mysql/;
+
+```
+
+```sql
+mysql> show master status\G;
+*************************** 1. row ***************************
+             File: binlog.001014
+         Position: 491
+     Binlog_Do_DB:
+ Binlog_Ignore_DB:
+Executed_Gtid_Set:
+1 row in set (0.00 sec)
+
+ERROR:
+No query specified
+
+mysql> show binlog events in 'binlog.001014'\G;
+
+```
+
+#### 慢查询日志
+帮助DBA定位可能存在问题的SQL语句，从而进行语句层面的优化.
+运行时间超过阈值的语句记录，阈值通过long_query_time来设置，默认是10s。
+```sql
+mysql> show variables like 'long_query_time'\G;
+mysql> show variables like 'long_slow_queries'\G;
+
+```
+
+#### 查询日志
+记录所有对数据库请求的信息
+
+
 
 ## 七，[MySQL 索引](https://www.cnblogs.com/wangsen/p/10864136.html)
 

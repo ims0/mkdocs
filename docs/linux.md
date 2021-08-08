@@ -521,6 +521,14 @@ SYNOPSIS
 
 ## 内存泄漏排查
 
+0x1: 系统总内存的分析
+
+可以从proc目录下的meminfo文件了解到当前系统内存的使用情况汇总，其中
+可用的物理内存 = memfree + buffers + cached
+当memfree不够时，内核会通过回写机制(pdflush线程)把cached和buffered内存回写到后备存储器，从而释放相关内存供进程使用，或者通过手动方式显式释放cache内存：
+
+`echo 3 > /proc/sys/vm/drop_caches`
+
 ### 一、c++ 重载new/delete操作符
 重载new/delete操作符，用list或者map记录对内存的使用情况。new一次，保存一个节点，delete一次，就删除节点。
 最后检测容器里是否还有节点，如果有节点就是有泄漏。也可以记录下哪一行代码分配的内存被泄漏。
