@@ -174,6 +174,7 @@ ssize_t mq_receive(mqd_t mqdes, char *msg_ptr,
 ssize_t mq_timedreceive(mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned int *msg_prio,
                           const struct timespec *abs_timeout);
 ```
+
 + 返回优先级最高到的最早的消息，
 + msg_prio 参数如果非NULL，则返回消息的优先级
 + 函数默认阻塞直到有消息到达，如过设置非阻塞，则立即返回with the error EAGAIN
@@ -200,6 +201,7 @@ mq_getattr() returns an mq_attr structure in the buffer pointed by attr.  This s
  the values in the remaining fields are ignored.
 
 ```
+
 + mq_setattr唯一可以修改的字段是mq_flags，可选为阻塞或者非阻塞，其它属性在消息创建时指定，不能修改。
 + mq_open 可以识别的字段是mq_maxmsg,mq_msgsize，
 1. attr.mq_maxmsg 不能超过文件 /proc/sys/fs/mqueue/msg_max 中的数值；
@@ -267,6 +269,7 @@ int msgget(key_t key, int msgflg);
 #include <sys/msg.h>
 int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
 ```
+
 + msgp 是一个结构体指针，第一个字段是long类型的消息类型，后续字段自己定义 
 ```
 typedef struct{
@@ -275,6 +278,7 @@ typedef struct{
 }Message;
 
 ```
+
 + msgsz 以字节为单位指定待发消息的大小,上述消息长度可以表示为：sizeof(Message) - sizeof(long)，
 
 + msgflg 参数可以是0，也可以是IPC_NOWAIT,IPC_NOWAIT 标志使得msgsnd调用非阻塞（如果没有存消息的空间，立马返回）
@@ -283,6 +287,7 @@ typedef struct{
 ```
 size_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtype, int msgflg);
 ```
+
 + msgp 参数指定所接收消息的存放位置，和msgsnd一样，指向紧挨着真正数据前的长整型字段。
 + msgsz 指向缓冲区大小，不包括长整型字段。
 + msgtype 指定希望读出消息的类型
@@ -296,6 +301,7 @@ size_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtype, int msgflg);
 ```
 int msgctl(int msqid, int cmd, struct msqid_ds *buf);
 ```
+
 + cmd 可取值：
 `IPC_STAT,IPC_SET,IPC_RMID,IPC_INFO,MSG_INFO,MSG_STAT,MSG_STAT_ANY`
 
@@ -459,7 +465,7 @@ extern int shm_open (const char *__name, int __oflag, mode_t __mode);
 int ftruncate (int __fd, __off_t __length) __THROW __wur;
 
 extern void *mmap (void *__addr, size_t __len, int __prot,
-		   int __flags, int __fd, __off_t __offset) __THROW;
+           int __flags, int __fd, __off_t __offset) __THROW;
            
 /* Remove shared memory segment.  */
 extern int shm_unlink (const char *__name); 
@@ -524,10 +530,11 @@ ceil(SHMMAX/PAGE_SIZE)
 
 管道有：匿名管道，有名管道（FIFO）
 两者默认都是半双工， 一端用来写一端用来读。
-```
+```c
 int pipe(int fd[2])
 int mkfifo(const char *pathname, mode_t mode)
 ```
+
 + 全双工使用socket函数
 
 `int socketpair(int domain, int type, int protocol, int sv[2]);`

@@ -12,27 +12,27 @@ theme:
   language: 'zh'
 nav:
     - Home: index.md
+    - System: sys.md
+    - Linux: linux.md
+    - IPC: IPC.md
+    - Mutex: mutex.md
+    - RCU: rcu.md
     - DataStruct: dataStruct.md
     - Algorithms: algorithms.md
     - Mysql: database.md
     - Redis: redis.md
     - Http: http.md
     - Tcp/Ip: tcp_ip.md
-    - NetProgram: net_program.md
     - Epoll: epoll.md
-    - IPC: IPC.md
-    - Linux: linux.md
-    - System: sys.md
+    - Listen: listen.md
+    - NetProgram: net_program.md
     - DesignPattern : designPattern.md
     - CppVirtualFun: cppVirtualFun.md
     - CPP: cpp.md
     - C: c.md
-    - RCU: rcu.md
     - ThreadPool: thread_pool.md
     - ProcessDesc: process_desc.md
     - ThreadSched: thread_sched.md
-    - Listen: listen.md
-    - Mutex: mutex.md
     - Netfilter: netfilter.md
     - BackQuestion: back-end.md
 

@@ -134,7 +134,7 @@ To see every process on the system using BSD syntax:
   ps ax
   ps axu
 ```
-* linux上进程有5种状态:
+**linux上进程有5种状态:**
 
 1. 运行(正在运行或在运行队列中等待)
 2. 中断(休眠中, 受阻, 在等待某个条件的形成或接受到信号)
@@ -142,7 +142,7 @@ To see every process on the system using BSD syntax:
 4. 僵死(进程已终止, 但进程描述符存在, 直到父进程调用wait4()系统调用后释放)
 5. 停止(进程收到SIGSTOP, SIGSTP, SIGTIN, SIGTOU信号后停止运行运行)
 
-* ps工具标识进程的5种状态码:
+**ps工具标识进程的5种状态码:**
 
 * D 不可中断 uninterruptible sleep (usually IO)
 * R 运行 runnable (on run queue)
@@ -150,26 +150,8 @@ To see every process on the system using BSD syntax:
 * T 停止 traced or stopped
 * Z 僵死 a defunct (”zombie”) process
 
-To print a process tree:
-```
-  ps -ejH
-  ps axjf
-```
-To get info about threads:
-```
-  ps -eLf
-  ps axms
-```
-To get security info:
-```
-  ps -eo euser,ruser,suser,fuser,f,comm,label
-  ps axZ
-  ps -eM
-```
-#### pstree
-以进程树的形式查看进程
+**PROCESS STATE CODES**
 
-#### PROCESS STATE CODES         top
        Here are the different values that the s, stat and state output
        specifiers (header "STAT" or "S") will display to describe the state
        of a process:
@@ -197,26 +179,41 @@ To get security info:
                     pthreads do)
                +    is in the foreground process group
 
-
-#### top
-
-#### kill
-
+To print a process tree:
+```
+  ps -ejH  简单
+  ps axjf  详细
+  pstree   简单
+```
+To get info about threads:
+```
+  ps -eLf 直观
+  ps axms
+```
+To get security info:
+```
+  ps -eo euser,ruser,suser,fuser,f,comm,label
+  ps axZ
+  ps -eM
+```
 ### objdump
 
 
-#### objdump反汇编常用参数
-objdump -d <file(s)>: 将代码段反汇编；
-objdump -S <file(s)>: 将代码段反汇编的同时，将反汇编代码与源代码交替显示，编译时需要使用-g参数，即需要调试信息；
-objdump -C <file(s)>: 将C++符号名逆向解析
-objdump -l <file(s)>: 反汇编代码中插入文件名和行号
-objdump -j section <file(s)>: 仅反汇编指定的section
+**objdump反汇编常用参数**
 
-#### 显示main.c的汇编代码
+* objdump -d <file(s)>: 将代码段反汇编；
+* objdump -S <file(s)>: 将代码段反汇编的同时，将反汇编代码与源代码交替显示，编译时需要使用-g参数，即需要调试信息；
+* objdump -C <file(s)>: 将C++符号名逆向解析
+* objdump -l <file(s)>: 反汇编代码中插入文件名和行号
+* objdump -j section <file(s)>: 仅反汇编指定的section
+
+ 显示main.c的汇编代码
+
 gcc -S -o main.s main.c
 
 
-#### 目标文件反汇编
+ 目标文件反汇编
+
 gcc -c -o main.o main.c
 objdump -s -d main.o > main.o.txt
 
@@ -228,10 +225,10 @@ nm是names的缩写， nm命令主要是用来列出某些文件中的符号（�
 nm [参数]
 常用选项：
 
--A    每个符号前显示文件名
--D    显示动态符号
--g    仅显示外部符号
--r    反序显示符号表
+1. -A    每个符号前显示文件名
+1. -D    显示动态符号
+1. -g    仅显示外部符号
+1. -r    反序显示符号表
 
 ### netstat
 #### 查询TCP各个状态的fd数量
@@ -412,111 +409,6 @@ https://blog.csdn.net/u014481096/article/details/80257404
 
   -s, --semaphore-id semid
          Remove the semaphore identified by semid.
-```
-
-## linux大小端问题
-
-1. Little-Endian就是低位字节排放在内存的低地址端，高位字节排放在内存的高地址端。
-2. Big-Endian就是高位字节排放在内存的低地址端，低位字节排放在内存的高地址端。
-
-举一个例子，比如数字高位在左边 0x12 34 56 78在内存中的表示形式为：
-
-1. 大端模式：高位也在左边，阅读顺序一致，高位低地址
-```
-低地址 -----------------> 高地址
-0x12  |  0x34  |  0x56  |  0x78
-```
-
-2. 小端模式：
-```
-低地址 ------------------> 高地址
-0x78  |  0x56  |  0x34  |  0x12
-```
-
-### 大端小端各自优势：
-1. 小端模式 ：强制转换数据不需要调整字节内容，1、2、4字节的存储方式一样。
-2. 大端模式 ：符号位的判定固定为第一个字节，容易判断正负。
-
-
-一般操作系统都是小端，而通讯协议是大端的。
-
-常见CPU的字节序
-Big Endian : PowerPC、IBM、Sun
-Little Endian : x86、DEC
-ARM既可以工作在大端模式，也可以工作在小端模式。
-```
-BOOL GetEndian()
-{
-    int a = 0x1234;
-    //通过将int强制类型转换成char单字节，通过判断起始存储位置。即等于 取b等于a的低地址部分
-    char b =  *(char *)&a;
-    if( b == 0x12)
-    {
-        return BigEndian;
-    }
-    return SmallEndian;
-}
-```
-联合体union的存放顺序是所有成员都从低地址开始存放，利用该特性可以轻松地获得了CPU对内存采用Little-endian还是Big-endian模式读写：
-```
-BOOL IsBigEndian()
-{
-    union NUM
-    {
-        int a;
-        char b;
-    }num;
-    num. a = 0x1234;
-    if( num. b == 0x12 )
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-```
-
-
-## linux 网络编程
-
-
-### [络编程之listen函数](https://blog.csdn.net/godop/article/details/79894079)
-```
-SYNOPSIS
-       #include <sys/types.h>          /* See NOTES */
-       #include <sys/socket.h>
-
-       int listen(int sockfd, int backlog);
-DESCRIPTION
-       listen()  marks  the  socket  referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection re‐
-       quests using accept(2).
-
-       The sockfd argument is a file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET.
-
-       The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.  If a connection  request  arrives
-       when  the  queue  is full, the client may receive an error with an indication of ECONNREFUSED or, if the underlying protocol supports retransmis‐
-       sion, the request may be ignored so that a later reattempt at connection succeeds.
-
-RETURN VALUE
-       On success, zero is returned.  On error, -1 is returned, and errno is set appropriately.
-```
-
-![avatar](tcp_ip_pic/listen_func.png)
-![avatar](tcp_ip_pic/listen_queue.png)
-
-
-### recv/recvfrom/recvmsg
-
-```
-SYNOPSIS
-       #include <sys/types.h>
-       #include <sys/socket.h>
-
-       ssize_t recv(int sockfd, void *buf, size_t len, int flags);
-
-       ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
-                        struct sockaddr *src_addr, socklen_t *addrlen);
-
-       ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
 ```
 
 ## 内存泄漏排查
