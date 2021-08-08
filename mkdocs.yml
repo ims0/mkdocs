@@ -14,12 +14,14 @@ nav:
     - Home: index.md
     - DataStruct: dataStruct.md
     - Algorithms: algorithms.md
-    - Database: database.md
+    - Mysql: database.md
+    - Redis: redis.md
     - Http: http.md
     - Tcp/Ip: tcp_ip.md
     - NetProgram: net_program.md
+    - Epoll: epoll.md
     - IPC: IPC.md
-    - linux: linux.md
+    - Linux: linux.md
     - System: sys.md
     - DesignPattern : designPattern.md
     - CppVirtualFun: cppVirtualFun.md
