@@ -511,6 +511,7 @@ gcc -fsanitize=address -g memgcc.c && ./a.out
 本文仅提供即视代码层面的检测机制，不考虑编译链接级的注入或钩子。此外，该机制暂未考虑并发保护。
 
 ### 六 使用preload 注入钩子替换malloc
+工程路径:com/item/ld_malloc
 ```cpp
 //can't use those in some func which use malloc (such printf) for avoid recursion
 void* malloc(size_t size)

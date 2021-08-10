@@ -7,6 +7,8 @@
 #include <iostream>
 using namespace std;
 
+int max_isoland=0;
+int single=0;
 int matrix[][4] = 
 {{1, 1, 1, 1},
     {1, 1, 1, 1}, 
@@ -20,25 +22,31 @@ void check(int i, int j){
         return ;
     }
     matrix[i][j] = 0;
+    single++;
     check(i-1,j);
     check(i+1,j);
     check(i,j+1);
     check(i,j-1);
 }
-
 int main() { 
     int sum = 0;
     for( int i = 0 ; i<4 ; i++ )
     {
         for( int j=0 ; j< 4 ; ++j )
         {
+            single=0;
             if( matrix[i][j] == 1 )
             {
                 sum++;
                 check(i,j);
             }
+            if( single>max_isoland )
+            {
+                max_isoland = single;
+            }
         }
     }
     printf("sum:%d\n", sum);
+    printf("num:%d\n", max_isoland);
     return 0; 
 }

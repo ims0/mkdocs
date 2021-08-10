@@ -27,19 +27,19 @@ SYN+ACK，接着客户端会返回 ACK，服务端收到第三次握手的 ACK �
 
 ### 二、内核执行 listen
 #### 2.1 listen 系统调用
-我在 net/socket.c 下找到了 listen 系统调用的源码。
+[net/socket.c ](https://elixir.bootlin.com/linux/v4.3.6/source/net/socket.c)
 
-```
+```c linenums="1" hl_lines="7 9" 
 //file: net/socket.c
 SYSCALL_DEFINE2(listen, int, fd, int, backlog)
 {
- //根据 fd 查找 socket 内核对象
  sock = sockfd_lookup_light(fd, &err, &fput_needed);
  if (sock) {
-  //获取内核参数 net.core.somaxconn
+  //获取内核参数 /proc/sys/net/core/somaxconn  4096
   somaxconn = sock_net(sock->sk)->core.sysctl_somaxconn;
+  //对比
   if ((unsigned int)backlog > somaxconn)
-   backlog = somaxconn;
+    backlog = somaxconn;
   
   //调用协议栈注册的 listen 函数
   err = sock->ops->listen(sock, backlog);
@@ -47,18 +47,14 @@ SYSCALL_DEFINE2(listen, int, fd, int, backlog)
 }
 ```
 
-用户态的 socket 文件描述符只是一个整数而已，内核是没有办法直接用的。所以该函数中第一行代码就是根据用户传入的文件描述符来查找到对应的 socket 内核对象。
-
+用户态的 socket 文件描述符只是一个整数而已，所以该函数中第一行代码就是根据用户传入的文件描述符来查找到对应的 socket 内核对象。
 再接着获取了系统里的 net.core.somaxconn 内核参数的值，和用户传入的 backlog 比较后取一个最小值传入到下一步中。
-
-所以，虽然 listen 允许我们传入 backlog（该值和半连接队列、全连接队列都有关系）。但是如果用户传入的比 net.core.somaxconn 还大的话是不会起作用的。
-
 接着通过调用 sock->ops->listen 进入协议栈的 listen 函数。
 
-#### 2.2 协议栈 listen
+#### 2.2 协议栈 listen与ack队列
 这里我们需要用到第一节中的 socket 内核对象结构图了，通过它我们可以看出 sock->ops->listen 实际执行的是 inet_listen。
 
-```
+```c linenums="1" hl_lines="9 10"
 //file: net/ipv4/af_inet.c
 int inet_listen(struct socket *sock, int backlog)
 {
@@ -67,21 +63,20 @@ int inet_listen(struct socket *sock, int backlog)
   //开始监听
   err = inet_csk_listen_start(sk, backlog);
  }
-
  //设置全连接队列长度
  sk->sk_max_ack_backlog = backlog;
 }
-
 ```
-在这里我们先看一下最底下这行，sk->sk_max_ack_backlog 是全连接队列的最大长度。所以这里我们就知道了一个关键技术点，服务器的全连接队列长度是 listen 时传入的 backlog 和 net.core.somaxconn 之间较小的那个值。
 
+在这里最底下这行，sk->sk_max_ack_backlog 是全连接队列的最大长度。
+所以这里我们就知道了服务器的全连接队列长度是 min(backlog, net.core.somaxconn) 。
 
 !!! note "note"
     如果你在线上遇到了全连接队列溢出的问题，想加大该队列长度，那么可能需要同时考虑 listen 时传入的 backlog 和 net.core.somaxconn。
 
 再回过头看 inet_csk_listen_start 函数。
 
-```
+```c
 //file: net/ipv4/inet_connection_sock.c
 int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
 {
@@ -109,7 +104,7 @@ icsk->icsk_accept_queue 定义在 inet_connection_sock 下，是一个 request_s
 
 ![avator](listen_pic/socket_listen.png)
 
-```
+```c
 //file: include/net/inet_connection_sock.h
 struct inet_connection_sock {
  /* inet_sock has to be the first member! */
@@ -121,7 +116,7 @@ struct inet_connection_sock {
 ```
 我们再来查找到 request_sock_queue 的定义，如下。
 
-```
+```c
 //file: include/net/request_sock.h
 struct request_sock_queue {
  //全连接队列
@@ -138,7 +133,7 @@ struct request_sock_queue {
 
 和半连接队列相关的数据对象是 listen_opt，它是 listen_sock 类型的。
 
-```
+```c
 //file: 
 struct listen_sock {
  u8   max_qlen_log;
@@ -166,7 +161,7 @@ int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
 在 reqsk_queue_alloc 这个函数中完成了接收队列 request_sock_queue 内核对象的创建和初始化。其中包括内存申请、半连接队列长度的计算、全连接队列头的初始化等等。
 
 让我们进入它的源码：
-```
+```c
 //file: net/core/request_sock.c
 int reqsk_queue_alloc(struct request_sock_queue *queue,
         unsigned int nr_table_entries)
@@ -204,21 +199,23 @@ int reqsk_queue_alloc(struct request_sock_queue *queue,
 #### 2.5 半连接队列长度计算
 在上一小节，我们提到 reqsk_queue_alloc 函数中计算了半连接队列的长度，由于这个有点小复杂，所以我们单独拉一个小节讨论这个。
 
-```
-//file: net/core/request_sock.c
+file: 下面是v4.4之前的版本，4.4开始该函数做了修改.
+[request_sock.c](https://elixir.bootlin.com/linux/v4.3.6/source/net/core/request_sock.c)
+```c
+/*
+ *    Move a socket into listening state.
+ */
+int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
+int sysctl_max_syn_backlog = 256;
+EXPORT_SYMBOL(sysctl_max_syn_backlog);
 int reqsk_queue_alloc(struct request_sock_queue *queue,
         unsigned int nr_table_entries)
 {
- //计算半连接队列的长度
  nr_table_entries = min_t(u32, nr_table_entries, sysctl_max_syn_backlog);
  nr_table_entries = max_t(u32, nr_table_entries, 8);
+ /* roundup_pow_of_two - round the given value up to nearest power of two*/
  nr_table_entries = roundup_pow_of_two(nr_table_entries + 1);
-
- //为了效率，不记录 nr_table_entries
- //而是记录 2 的几次幂等于 nr_table_entries
- for (lopt->max_qlen_log = 3;
-      (1 << lopt->max_qlen_log) < nr_table_entries;
-      lopt->max_qlen_log++);
+ lopt_size += nr_table_entries * sizeof(struct request_sock *);
  ......
 }
 ```
@@ -226,11 +223,8 @@ int reqsk_queue_alloc(struct request_sock_queue *queue,
 传进来的 nr_table_entries 在最初调用 reqsk_queue_alloc 的地方可以看到，它是内核参数 net.core.somaxconn 和用户调用 listen 时传入的 backlog 二者之间的较小值。
 
 在这个 reqsk_queue_alloc 函数里，又将会完成三次的对比和计算。
-
 min_t(u32, nr_table_entries, sysctl_max_syn_backlog) 这个是再次和 sysctl_max_syn_backlog 内核对象又取了一次最小值。
-
 max_t(u32, nr_table_entries, 8) 这句保证 nr_table_entries 不能比 8 小，这是用来避免新手用户传入一个太小的值导致无法建立连接使用的。
-
 roundup_pow_of_two(nr_table_entries + 1) 是用来上对齐到 2 的整数幂次的。
 
 说到这儿，你可能已经开始头疼了。确实这样的描述是有点抽象。咱们换个方法，通过两个实际的 Case 来计算一下。
@@ -256,27 +250,28 @@ roundup_pow_of_two (128 + 1) = 256
 
 最后再说一点，为了提升比较性能，内核并没有直接记录半连接队列的长度。而是采用了一种晦涩的方法，只记录其幂次假设队列长度为 16，则记录 max_qlen_log 为 4 （2 ^4 = 16），假设队列长度为 256，则记录 max_qlen_log 为 8 （2 ^ 8 = 256）。大家只要知道这个东东就是为了提升性能的就行了。
 
-## 最后，总结一下
+## 总结一下
 
 计算机系的学生就像背八股文一样记着服务器端 socket 程序流程：先 bind、再 listen、然后才能 accept。至于为什么需要先 listen 一下才可以 accpet，似乎我们很少去关注。
 
-通过今天对 listen 源码的简单浏览，我们发现 listen 最主要的工作就是申请和初始化接收队列，包括全连接队列和半连接队列。其中全连接队列是一个链表，而半连接队列由于需要快速的查找，所以使用的是一个哈希表（其实半连接队列更准确的的叫法应该叫半连接哈希表）。
+对 listen 源码的简单浏览，我们发现 listen 最主要的工作就是<font color="#0099ff">申请和初始化接收队列</font>(全连接队列,半连接队列)。
+其中全连接队列是一个 **链表** ，而半连接队列由于需要快速的查找，所以使用的是一个 **哈希表** （其实半连接队列更准确的的叫法应该叫半连接哈希表）。
 
 ![avator](listen_pic/queue_st.png)
 
 
-
-全/半两个队列是三次握手中很重要的两个数据结构，有了它们服务器才能正常响应来自客户端的三次握手。所以服务器端都需要 listen 一下才行。
-
 除此之外我们还有额外收获，我们还知道了内核是如何确定全/半连接队列的长度的。
+```
+/proc/sys/net/core/somaxconn
+/proc/sys/net/ipv4/tcp_max_syn_backlog
+```
+1.**全连** 队列的长度
 
-1.全连接队列的长度
-对于全连接队列来说，其最大长度是 listen 时传入的 backlog 和 net.core.somaxconn 之间较小的那个值。如果需要加大全连接队列长度，那么就是调整 backlog 和 somaxconn。
+其最大长度是 listen 时传入的 **backlog** 和 **net.core.somaxconn** 之间较小的那个值。
 
-2.半连接队列的长度
-在 listen 的过程中，内核我们也看到了对于半连接队列来说，其最大长度是 min(backlog, somaxconn, tcp_max_syn_backlog) + 1 再上取整到 2 的幂次，但最小不能小于16。如果需要加大半连接队列长度，那么需要一并考虑 backlog，somaxconn 和 tcp_max_syn_backlog 这三个参数。网上任何告诉你修改某一个参数就能提高半连接队列长度的文章都是错的。
+2.**半连** 队列的长度
 
-所以，不放过一个细节，你可能会有意想不到的收获！
+在 listen 的过程中，内核我们也看到了对于半连接队列来说，其最大长度是 min(backlog, somaxconn, tcp_max_syn_backlog) + 1 再上取整到 2 的幂次，但最小不能小于16。
 
 https://mp.weixin.qq.com/s/hv2tmtVpxhVxr6X-RNWBsQ
 
