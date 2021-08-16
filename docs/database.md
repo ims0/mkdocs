@@ -541,7 +541,7 @@ Variable_name: log_error
 1 row in set (0.00 sec)
 ```
 
-#### 二进制日志
+#### 二进制日志(binlog)
 作用:恢复(point-in-time)，复制（主从mysql），审计（安全）
 
 执行对数据库更改的操作，不包括SELECT,SHOW这类。其它操作，就算没有导致数据发生变化也可能写入二进制日志。
@@ -588,7 +588,61 @@ mysql> show variables like 'long_slow_queries'\G;
 #### 查询日志
 记录所有对数据库请求的信息
 
+#### 先写日志(redo log)
+redo log日志也叫做WAL技术（Write- Ahead Logging），他是一种先写日志，并更新内存，最后再更新磁盘的技术，为了就是减少sql执行期间的数据库io操作，并且更新磁盘往往是在Mysql比较闲的时候，这样就大大减轻了Mysql的压力。
 
+redo log是固定大小，是物理日志，属于InnoDB引擎的，并且写redo log是环状写日志的形式：redo log日志也叫做WAL技术（Write- Ahead Logging），他是一种先写日志，并更新内存，最后再更新磁盘的技术，为了就是减少sql执行期间的数据库io操作，并且更新磁盘往往是在Mysql比较闲的时候，这样就大大减轻了Mysql的压力。
+
+redo log是固定大小，是物理日志，属于InnoDB引擎的，并且写redo log是环状写日志的形式：
+如上图所示：若是四组的redo log文件，一组为1G的大小，那么四组就是4G的大小，其中write pos是记录当前的位置，有数据写入当前位置，那么write pos就会边写入边往后移。
+
+check point记录擦除的位置，因为redo log是固定大小，所以当redo log满的时候，也就是write pos追上check point的时候，需要清除redo log的部分数据，清除的数据会被持久化到磁盘中，然后将check point向前移动。
+
+redo log日志实现了即使在数据库出现异常宕机的时候，重启后之前的记录也不会丢失，这就是crash-safe能力。
+
+binlog称为归档日志，是逻辑上的日志，它属于Mysql的Server层面的日志，记录着sql的原始逻辑，主要有两种模式：一个是statement格式记录的是原始的sql，而row格式则是记录行内容。
+
+redo log和binlog记录的形式、内容不同，这两者日志都能通过自己记录的内容恢复数据。
+
+之所以这两个日志同时存在，是因为刚开始Mysql自带的引擎MyISAM就没有crash-safe功能的，并且在此之前Mysql还没有InnoDB引擎，Mysql自带的binlog日志只是用来归档日志的，所以InnoDB引擎也就通过自己redo log日志来实现crash-safe功能。
+
+###怎么查看索引是否生效？什么情况下索引会失效呢？
+查看索引是否起作用可以使用explain关键字，查询后的语句中的key字段，若是使用了索引，该字段会展示索引的名字。
+```sql
+mysql> explain select * from test where id =1\G;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: test
+   partitions: NULL
+         type: const
+possible_keys: PRIMARY
+          key: PRIMARY
+      key_len: 4
+          ref: const
+         rows: 1
+     filtered: 100.00
+        Extra: NULL
+1 row in set, 1 warning (0.00 sec)
+```
+#### explain列的解释
+```
+table：查询的数据表
+
+type：这是重要的列，显示连接使用了何种类型。从最好到最差的连接类型为const、eq_reg、ref、range、index和all。
+
+possible_keys：显示可能应用在这张表中的索引。如果为空，没有可能的索引。可以为相关的域从where语句中选择一个合适的语句
+
+key： 实际使用的索引。如果为null，则没有使用索引。很少的情况下，mysql会选择优化不足的索引。这种情况下，可以在select语句中使用use index（indexname）来强制使用一个索引或者用ignore index（indexname）来强制mysql忽略索引
+
+key_len：使用的索引的长度。在不损失精确性的情况下，长度越短越好
+
+ref：显示索引的哪一列被使用了，如果可能的话，是一个常数
+
+rows：mysql认为必须检查的用来返回请求数据的行数，mysql完成此请求扫描的行数。
+
+extra：关于mysql如何解析查询的额外信息。将在表4.3中讨论，但这里可以看到的坏的例子是using temporary和using filesort，意思mysql根本不能使用索引，结果是检索会很慢。
+```
 
 ## 七，[MySQL 索引](https://www.cnblogs.com/wangsen/p/10864136.html)
 
