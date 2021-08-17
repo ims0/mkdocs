@@ -209,6 +209,31 @@ step1 执行时是会隐式的添加 行(X)锁 / gap(X)锁的，从而 step2 会
 
 ## 五，[锁(innodb-locking doc)](https://dev.mysql.com/doc/refman/5.7/en/innodb-locking.html)
 [mysql lock video on bilibili](https://www.bilibili.com/video/BV1x54y1979n?from=search&seid=7051544205933286059)
+### 死锁
+
+#### lock & latch
+0|lock  |latch
+---| --- |  ---
+对象 | 事务 | 线程
+保护 | 数据库内容 |内存内容
+持续时间|整个事务|临界资源
+模式 |行锁，表锁，意向锁| 读写锁，互斥量
+死锁 |通过等待图，超时机制检测 | 无检测，通过顺序加锁避免死锁
+位置 |Lock Manager的哈希表中 |每个数据结构的对象中
+
+#### 死锁检测
+数据库普遍采用 wait-for graph等待图的方式来进行死锁检测。较等待超时方案更为主动，InnoDB引擎采用这个方式。
+等待图根据锁与事物的关系构建图，如果出现回路，就代表死锁。
+发生死锁时候，InnoDB选择回滚undo量最小的事务。
+
+
+防止死锁的途径就是避免满足死锁条件的情况发生，适合这个问题解决的方案有:
+
+1、保持事务简短并在一个批处理中
+在同一数据库中并发执行多个需要长时间运行的事务时通常发生死锁。事务运行时间越长，其持有排它锁或更新锁的时间也就越长，从而堵塞了其它活动并可能导致死锁。保持事务在一个批处理中，可以最小化事务的网络通信往返量，减少完成事务可能的延迟并释放锁。
+
+2、使用低隔离级别
+确定事务是否能在更低的隔离级别上运行。执行提交读允许事务读取另一个事务已读取（未修改）的数据，而不必等待第一个事务完成。使用较低的隔离级别（例如提交读）而不使用较高的隔离级别（例如可串行读）可以缩短持有共享锁的时间，从而降低了锁定争夺（比如这次的S NK和X IK 是InnoDB引擎Repeatable Read级别才有的）。
 
 * Shared and Exclusive Locks
 * Intention Locks
@@ -440,7 +465,8 @@ CREATE TABLE test(
     id INT NOT NULL AUTO_INCREMENT  PRIMARY KEY ,
     title VARCHAR(100) NOT NULL,
     author CHAR(20) NOT NULL,
-    submission_date DATE
+    insertime timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '添加时间',
+    updatetime timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
     )DEFAULT CHARSET=utf8;
 ```
 
@@ -485,6 +511,86 @@ UPDATE table_name SET field1=new-value1, field2=new-value2
 
 + 修改表名
 `ALTER TABLE testalter_tbl RENAME TO alter_tbl;`
+
+### order
+```sql
+select *from test order by title;
+```
+
+### join
+
+JOIN 按照功能大致分为如下三类：
+
+INNER JOIN（内连接,或等值连接）：获取两个表中字段匹配关系的记录。
+LEFT JOIN（左连接）：获取左表所有记录，即使右表没有对应匹配的记录。
+RIGHT JOIN（右连接）： 与 LEFT JOIN 相反，用于获取右表所有记录，即使左表没有对应匹配的记录。
+
+```sql
+select * from booklist a JOIN author b on a.author=b.author;
+select * from booklist a left JOIN author b on a.author=b.author;
+select * from booklist a right JOIN author b on a.author=b.author;
+
+mysql> select * from author;
++--------------+-------+
+| author       | count |
++--------------+-------+
+| 菜鸟教程     |    20 |
+| RUNOOB.COM   |    30 |
+| google       |    40 |
+| mengso       |    50 |
++--------------+-------+
+4 rows in set (0.00 sec)
+
+mysql> select * from booklist;
++----+----------------+--------------+---------------------+
+| id | title          | author       | submission_date     |
++----+----------------+--------------+---------------------+
+|  1 |  学习 PHP      | 菜鸟教程     | 2021-08-17 23:28:59 |
+|  2 |  学习 mysql    | 菜鸟教程     | 2021-08-17 23:05:59 |
+|  3 |  学习 java     | RUNOOB.COM   | 2021-08-17 23:25:59 |
+|  4 |  学习 python   | RUNOOB.COM   | 2021-08-17 23:28:59 |
+|  5 |  学习 c        | fk           | 2021-08-17 23:31:37 |
+|  6 |  学习 c++      | fk           | 2021-08-17 23:46:53 |
++----+----------------+--------------+---------------------+
+6 rows in set (0.00 sec)
+
+mysql> select * from booklist a JOIN author b on a.author=b.author;
++----+----------------+--------------+---------------------+--------------+-------+
+| id | title          | author       | submission_date     | author       | count |
++----+----------------+--------------+---------------------+--------------+-------+
+|  1 |  学习 PHP      | 菜鸟教程     | 2021-08-17 23:28:59 | 菜鸟教程     |    20 |
+|  2 |  学习 mysql    | 菜鸟教程     | 2021-08-17 23:05:59 | 菜鸟教程     |    20 |
+|  3 |  学习 java     | RUNOOB.COM   | 2021-08-17 23:25:59 | RUNOOB.COM   |    30 |
+|  4 |  学习 python   | RUNOOB.COM   | 2021-08-17 23:28:59 | RUNOOB.COM   |    30 |
++----+----------------+--------------+---------------------+--------------+-------+
+4 rows in set (0.00 sec)
+
+mysql> select * from booklist a left JOIN author b on a.author=b.author;
++----+----------------+--------------+---------------------+--------------+-------+
+| id | title          | author       | submission_date     | author       | count |
++----+----------------+--------------+---------------------+--------------+-------+
+|  1 |  学习 PHP      | 菜鸟教程     | 2021-08-17 23:28:59 | 菜鸟教程     |    20 |
+|  2 |  学习 mysql    | 菜鸟教程     | 2021-08-17 23:05:59 | 菜鸟教程     |    20 |
+|  3 |  学习 java     | RUNOOB.COM   | 2021-08-17 23:25:59 | RUNOOB.COM   |    30 |
+|  4 |  学习 python   | RUNOOB.COM   | 2021-08-17 23:28:59 | RUNOOB.COM   |    30 |
+|  5 |  学习 c        | fk           | 2021-08-17 23:31:37 | NULL         |  NULL |
+|  6 |  学习 c++      | fk           | 2021-08-17 23:46:53 | NULL         |  NULL |
++----+----------------+--------------+---------------------+--------------+-------+
+6 rows in set (0.00 sec)
+
+mysql> select * from booklist a right JOIN author b on a.author=b.author;
++------+----------------+--------------+---------------------+--------------+-------+
+| id   | title          | author       | submission_date     | author       | count |
++------+----------------+--------------+---------------------+--------------+-------+
+|    2 |  学习 mysql    | 菜鸟教程     | 2021-08-17 23:05:59 | 菜鸟教程     |    20 |
+|    1 |  学习 PHP      | 菜鸟教程     | 2021-08-17 23:28:59 | 菜鸟教程     |    20 |
+|    4 |  学习 python   | RUNOOB.COM   | 2021-08-17 23:28:59 | RUNOOB.COM   |    30 |
+|    3 |  学习 java     | RUNOOB.COM   | 2021-08-17 23:25:59 | RUNOOB.COM   |    30 |
+| NULL | NULL           | NULL         | NULL                | google       |    40 |
+| NULL | NULL           | NULL         | NULL                | mengso       |    50 |
++------+----------------+--------------+---------------------+--------------+-------+
+6 rows in set (0.00 sec)
+```
 
 
 ### 主从复制

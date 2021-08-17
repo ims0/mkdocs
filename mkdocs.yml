@@ -22,6 +22,7 @@ nav:
     - Mysql: database.md
     - Redis: redis.md
     - Http: http.md
+    - Nginx: nginx.md
     - Tcp/Ip: tcp_ip.md
     - Epoll: epoll.md
     - Listen: listen.md

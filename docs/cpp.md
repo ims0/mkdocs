@@ -80,6 +80,51 @@ int main() {
 ### 定义一个只能在栈上定义对象的类
 **operator new和operator delete定义为private**，这样使用new操作符创建对象时候，无法调用operator new，delete销毁对象也无法调用operator delete。
 
+## 模板
+### 类特化与偏特化
+模板为什么要特化，因为编译器认为，对于特定的类型，如果你能对某一功能更好的实现，那么就该听你的。
+
+模板分为类模板与函数模板，特化分为全特化与偏特化。全特化就是限定死模板实现的具体类型，偏特化就是如果这个模板有多个类型，那么只限定其中的一部分。
+```cpp
+#include <iostream>
+using namespace std;
+template <typename T1, typename T2>
+class Test {
+public:
+  Test(T1 i, T2 j) : a(i), b(j) { cout << "模板类" << endl; }
+
+private:
+  T1 a;
+  T2 b;
+};
+
+template <>
+class Test<int, char> {
+public:
+  Test(int i, char j) : a(i), b(j) { cout << "全特化" << a << b << endl; }
+
+private:
+  int a;
+  char b;
+};
+
+template <typename T2>
+class Test<char, T2> {
+public:
+  Test(char i, T2 j) : a(i), b(j) { cout << "偏特化" << endl; }
+
+private:
+  char a;
+  T2 b;
+};
+
+int main() {
+  Test<double, double> t1(0.1, 0.2);
+  Test<int, char> t2(1, 'A');
+  Test<char, bool> t3('A', true);
+  return 0;
+}
+```
 
 ## [构造函数详解](https://www.cnblogs.com/alantu2018/p/8459250.html)
 
@@ -141,6 +186,9 @@ A2：虚函数是实现多态的基础，当我们通过基类的指针是析构
 Q3：什么情况下必须定义拷贝构造函数？
 A3：当类的对象用于函数值传递时（值参数，返回类对象），拷贝构造函数会被调用。如果对象复制并非简单的值拷贝，那就必须定义拷贝构造函数。例如大的堆       栈数据拷贝。如果定义了拷贝构造函数，那也必须重载赋值操作符。
 
+## 仿函数与函数指针
+
+仿函数在编译期可以内联，速度可能比函数指针快。
 
 ## [四个强转](https://blog.csdn.net/Bob__yuan/article/details/88044361)
 
@@ -179,11 +227,11 @@ type-id 必须是一个指针、引用、算术类型、函数针或者成员指
 用法为 dynamic_cast<type-id> (expression)。
 几个特点如下：
 
-1. 其他三种都是编译时完成的，dynamic_cast 是运行时处理的，运行时要进行类型检查。
+1. 其他三种都是编译时完成的，dynamic_cast 是 **运行时处理的** ，运行时要进行类型检查。
 2. 不能用于内置的基本数据类型的强制转换
-3. dynamic_cast 要求 <> 内所描述的目标类型必须为指针或引用。dynamic_cast 转换如果成功的话返回的是指向类的指针或引用，转换失败的话则会返回 nullptr
+3. dynamic_cast 要求 <> 内所描述的<font color="#ff0000">目标类型必须为指针或引用</font>。dynamic_cast 如果成功返回的是指向类的指针或引用，转换失败会返回 nullptr
 4. 在类的转换时，在类层次间进行上行转换（子类指针指向父类指针）时，dynamic_cast 和 static_cast 的效果是一样的。在进行下行转换（父类指针转化为子类指针）时，dynamic_cast 具有类型检查的功能，比 static_cast 更安全。 向下转换的成功与否还与将要转换的类型有关，即要转换的指针指向的对象的实际类型与转换以后的对象类型一定要相同，否则转换失败。在C++中，编译期的类型转换有可能会在运行时出现错误，特别是涉及到类对象的指针或引用操作时，更容易产生错误。Dynamic_cast操作符则可以在运行期对可能产生问题的类型转换进行测试。
-5. 使用 dynamic_cast 进行转换的，基类中一定要有虚函数，否则编译不通过（类中存在虚函数，就说明它有想要让基类指针或引用指向派生类对象的情况，此时转换才有意义）。这是由于运行时类型检查需要运行时类型信息，而这个信息存储在类的虚函数表中，只有定义了虚函数的类才有虚函数表（C++中的虚函数基本原理这篇文章写得不错，https://blog.csdn.net/xiejingfa/article/details/50454819）。
+5. 使用 dynamic_cast 进行转换的，基类中 <font color="#ff0000">一定要有虚函数，否则编译不通过</font>（类中存在虚函数，就说明它有想要让基类指针或引用指向派生类对象的情况，此时转换才有意义）。这是由于运行时类型检查需要运行时类型信息，而这个信息存储在类的虚函数表中，只有定义了虚函数的类才有虚函数表.
 
 ## [迭代器失效的情况](https://www.cnblogs.com/fnlingnzb-learner/p/9300073.html)
 
@@ -264,12 +312,14 @@ int main(int argc, char *argv[]) {
 ```
 
 ## [C++11 std::move和std::forward](https://www.jianshu.com/p/b90d1091a4ff)
+forward() 必须配合模板使用，因为只有在模板参数T&&下才能出发引用折叠，
+T&&与具体的Foo&&不同，后者是具体类型的右值引用，而T&&可以是const Foo&,Foo&,F&&.
 
 std::move()和std::forward()对比
 
 + std::move执行到右值的无条件转换。就其本身而言，它没有move任何东西。
 + std::forward只有在它的参数绑定到一个右值上的时候，它才转换它的参数到一个右值。
-+ std::move和std::forward只不过就是执行类型转换的两个函数；std::move没有move任何东西，std::forward没有转发任何东西。在运行期，它们没有做任何事情。它们没有产生需要执行的代码，一byte都没有。
++ std::move和std::forward只不过就是执行类型转换的两个函数；std::move没有move任何东西，std::forward没有转发任何东西。在运行期，它们没有做任何事情。
 + std::forward<T>()不仅可以保持左值或者右值不变，同时还可以保持const、Lreference、Rreference、validate等属性不变；
 
 ```cpp

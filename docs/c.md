@@ -1,16 +1,16 @@
-# 
+#
 
 ##关键字作用解释：
 ### volatile(易变的，不可优化的，顺序性)
 volatile 多出现在处理硬件的程序中，它的值由程序控制之外的过程控制，如系统时钟定时更新的变量，对象的值可能在程序的控制外改变。遇到这个关键字声明的变量，编译器对访问该变量的代码就不再进行优化，从而可以提供对特殊地址的稳定访问
-#### 1. **易变性**: 
+#### 1. **易变性**:
 所谓的易变性，在汇编层面反映出来，就是两条语句，下一条语句不会直接使用上一条语句对应的volatile变量的寄存器内容，而是重新从内存中读取。
 ```
 int a,b;
 a =fun();
 b=a+1;
 ```
-#### 2. **不可优化**: 
+#### 2. **不可优化**:
 volatile告诉编译器，不要对我这个变量进行各种激进的优化，甚至将变量直接消除，保证程序员写在代码中的指令，一定会被执行。
 ```
 a = 1; mov eax,dword ptr [esp]
@@ -19,7 +19,7 @@ c = 3; mov edx,dword ptr [esp+8]
 printf("%d, %d, %d", a, b, c);//确保变量没有被常量替换
 ```
 #### 3. **顺序性** [编译有序，cpu可以乱序]:
-能够保证Volatile变量间的顺序性，编译器不会进行乱序优化。 
+能够保证Volatile变量间的顺序性，编译器不会进行乱序优化。
 
 1. C/C++ Volatile变量，与非Volatile变量之间的操作，是可能被编译器交换顺序的。
 2. C/C++ Volatile变量间的操作，是不会被编译器交换顺序的。
@@ -27,7 +27,7 @@ printf("%d, %d, %d", a, b, c);//确保变量没有被常量替换
 CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，volatile对此无能为力,
 4. 针对这个多线程的应用，真正正确的做法，是构建一个happens-before语义(Mutex、 Spinlock、 RWLock)。
 
-## atomic_inc(&v)原子操作简述 
+## atomic_inc(&v)原子操作简述
  atomic_inc(&v)对变量v用锁定总线的单指令进行不可分解的"原子"级增量操作，避免v的值由于中断或多处理器同时操作造成不确定状态。
 
  原子操作需要硬件的支持，因此是架构相关的，其API和原子类型的定义都定义在内核源码树的include/asm/atomic.h文件中，它们都使用汇编语言实现，因为C语言并不能实现这样的操作。
@@ -36,7 +36,7 @@ CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，vo
 1
 `typedef struct { volatile int counter; } atomic_t;`
 
-　　volatile修饰字段告诉gcc不要对该类型的数据做优化处理，对它的访问都是对内存的访问，而不是对寄存器的访问。 
+　　volatile修饰字段告诉gcc不要对该类型的数据做优化处理，对它的访问都是对内存的访问，而不是对寄存器的访问。
 
 ### linux2.6.18之后删除了`<asm/atomic.h>`
 gcc 提供了内置的原子操作函数，更适合用户态的程序使用.
@@ -92,8 +92,36 @@ offsetof 是一个宏，在 stddef.h 中定义
 
 `＃define offsetof(struct_t,member) ((size_t)(char *)&((struct_t *)0)->member)`
 
+## before main run
+```c
+#include <stdio.h>
+__attribute((constructor)) void before_main()
+{
+    printf("%s\n",__FUNCTION__);
+}
+__attribute((destructor)) void after_main()
+{
+    printf("%s\n",__FUNCTION__);
+}
+int main( int argc, char ** argv )
+{
+    printf("%s\n",__FUNCTION__);
+    return 0;
+}
+```
+## free
+
+使用malloc分配内存时候根据参数指定的大小，分配一块内存，然后返回这块内存的起始位置给调用者，这就是调用者拿到的所谓的指针。
+起始这个指针并不是真正的起始位置，真正的指针在malloc返回指针 p 的前面，内存分配器在 p 的前面用两个字节的空间来存放分配的内存大小信息。
+
 
 ## C程序内存分布
+
+### bss段
+全局变量总是获得静态内存，如果它们未初始化，则它们在二进制文件中没有空间，
+但是当二进制文件加载到进程内存空间时，它们会在内存中获取它。
+
+
 ![avatar](c_pic/exe-addr-area.png)
 ![avatar](c_pic/memoryLayoutC.jpg)
 ![avatar](c_pic/func_struct.png)
