@@ -1,7 +1,7 @@
 #
 
 ##关键字作用解释：
-### volatile(易变的，不可优化的，顺序性)
+### volatile [`ˈvɑːlətl`]
 volatile 多出现在处理硬件的程序中，它的值由程序控制之外的过程控制，如系统时钟定时更新的变量，对象的值可能在程序的控制外改变。遇到这个关键字声明的变量，编译器对访问该变量的代码就不再进行优化，从而可以提供对特殊地址的稳定访问
 #### 1. **易变性**:
 所谓的易变性，在汇编层面反映出来，就是两条语句，下一条语句不会直接使用上一条语句对应的volatile变量的寄存器内容，而是重新从内存中读取。
@@ -26,6 +26,11 @@ printf("%d, %d, %d", a, b, c);//确保变量没有被常量替换
 3. 哪怕将所有的变量全部都声明为volatile，哪怕杜绝了编译器的乱序优化，但是针对生成的汇编代码，
 CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，volatile对此无能为力,
 4. 针对这个多线程的应用，真正正确的做法，是构建一个happens-before语义(Mutex、 Spinlock、 RWLock)。
+
+```c
+asm volatile("" ::: "memory");        // Prevent compiler reordering
+asm volatile("mfence" ::: "memory");  // Prevent memory reordering
+```
 
 ## atomic_inc(&v)原子操作简述
  atomic_inc(&v)对变量v用锁定总线的单指令进行不可分解的"原子"级增量操作，避免v的值由于中断或多处理器同时操作造成不确定状态。
@@ -92,7 +97,7 @@ offsetof 是一个宏，在 stddef.h 中定义
 
 `＃define offsetof(struct_t,member) ((size_t)(char *)&((struct_t *)0)->member)`
 
-## before main run
+## main前后运行的函数
 ```c
 #include <stdio.h>
 __attribute((constructor)) void before_main()

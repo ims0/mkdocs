@@ -12,20 +12,21 @@ theme:
   language: 'zh'
 nav:
     - Home: index.md
+    - Algorithms: algorithms.md
+    - DataStruct: dataStruct.md
     - System: sys.md
     - Linux: linux.md
     - IPC: IPC.md
     - Mutex: mutex.md
     - RCU: rcu.md
-    - DataStruct: dataStruct.md
-    - Algorithms: algorithms.md
     - Mysql: database.md
     - Redis: redis.md
-    - Http: http.md
     - Nginx: nginx.md
+    - Http: http.md
+    - Safe: safe.md
     - Tcp/Ip: tcp_ip.md
-    - Epoll: epoll.md
     - Listen: listen.md
+    - Epoll: epoll.md
     - NetProgram: net_program.md
     - DesignPattern : designPattern.md
     - CppVirtualFun: cppVirtualFun.md
@@ -35,6 +36,7 @@ nav:
     - ProcessDesc: process_desc.md
     - ThreadSched: thread_sched.md
     - Netfilter: netfilter.md
+    - Leetcode: leetcode.md
     - BackQuestion: back-end.md
 
 markdown_extensions:

@@ -43,13 +43,47 @@ DRAM不命中成为缺页(page fault)。
 1. 如果一个一级页表的PTE是空的，那么二级页表就不会存在
 2. 只有一级页表才需要驻留在内存中，只有经常使用的二级页表才会缓存在主存中。
 
+## smp
+The mfence instruction is specific to x86/64. If you want to make the code more portable, 
+you could wrap this intrinsic in a preprocessor macro. The Linux kernel has wrapped it in a macro named `smp_mb`,
+along with related macros such as `smp_rmb` and `smp_wmb`, and provided alternate implementations on different architectures.
+For example, on PowerPC, smp_mb is implemented as sync.
+
+https://preshing.com/20120515/memory-reordering-caught-in-the-act/
+```c
+void *thread1Func(void *param) {
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  CPU_SET(0, &mask);
+  if (pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0) {
+    printf("set thread affinity failed! \n");
+  }
+  srand(time(NULL)); // Initialize random number generator
+  for (;;)           // Loop indefinitely
+  {
+    sem_wait(&beginSema1); // Wait for signal from main thread
+    while (rand() % 8 != 0) {
+    } // Add a short, random delay
+
+    // ----- THE TRANSACTION! -----
+    X = 1;
+    // asm volatile("" ::: "memory");        // Prevent compiler reordering
+    // asm volatile("mfence" ::: "memory");  // Prevent memory reordering
+    r1 = Y;
+
+    sem_post(&endSema); // Notify transaction complete
+  }
+  return NULL; // Never returns
+};
+```
+
 
 ## 死锁
 ### 死锁必要条件及避免算法、
 
 1. 资源不能共享，只能由一个进程使用。
-2. 请求与保持（Hold andwait）：已经得到资源的进程可以再次申请新的资源。
-3. 不可剥夺（Nopre-emption）：已经分配的资源不能从相应的进程中被强制地剥夺。
+2. 不可剥夺（Nopre-emption）：已经分配的资源不能从相应的进程中被强制地剥夺。
+3. 请求与保持（Hold andwait）：已经得到资源的进程可以再次申请新的资源。
 4. 循环等待：系统中若干进程组成环路，该环路中每个进程都在等待相邻进程正占用的资源
 
 ### 处理死锁的策略：
@@ -59,8 +93,67 @@ DRAM不命中成为缺页(page fault)。
 2. 检测死锁并且恢复。(破坏请求与保持)
     1. 请求资源时候检测，获取不到资源就释放已经获取的资源
     2. 定时检测是否发生死锁
+### c++11 处理死锁
+1. [std::lock](https://zh.cppreference.com/w/cpp/thread/lock)
+锁定给定的可锁定 (Lockable) 对象 lock1 、 lock2 、 ... 、 lockn ，用免死锁算法避免死锁。
+以对 lock 、 try_lock 和 unlock 的未指定系列调用锁定对象。若调用 lock 或 unlock 导致异常，则在重抛前对任何已锁的对象调用 unlock 。
 
+```cpp
+// std::lock example
+#include <iostream>       // std::cout
+#include <thread>         // std::thread
+#include <mutex>          // std::mutex, std::lock
 
+std::mutex foo,bar;
+
+void task_a () {
+  // foo.lock(); bar.lock(); // replaced by:
+  std::lock (foo,bar);
+  std::cout << "task a\n";
+  foo.unlock();
+  bar.unlock();
+}
+
+void task_b () {
+  // bar.lock(); foo.lock(); // replaced by:
+  std::lock (bar,foo);
+  std::cout << "task b\n";
+  bar.unlock();
+  foo.unlock();
+}
+
+int main ()
+{
+  std::thread th1 (task_a);
+  std::thread th2 (task_b);
+
+  th1.join();
+  th2.join();
+
+  return 0;
+}
+```
+## 无锁编程
+https://juejin.cn/post/6844903486593695751    
+https://docs.microsoft.com/zh-cn/windows/win32/dxtecharts/lockless-programming?redirectedfrom=MSDN
+
+Lockless 编程
+顾名思义，Lockless 编程是一系列方法，用于在不使用锁的情况下安全地操作共享数据。 有可用于传递消息、共享数据的列表和队列以及其他任务的 lockless 算法。
+执行 lockless 编程时，必须处理两个难题：非原子操作和重新排序。
+
+### rcu
+userspace RCU (read-copy-update)    
+http://liburcu.org/
+
+### 原子变量
+atomic<int> i = 0;
+
+### [利用CAS实现线程安全的无锁队列](https://blog.csdn.net/qq_40843865/article/details/90734118)
+在开始说无锁队列之前，我们需要知道一个很重要的技术就是CAS操作——Compare And Set 或是 Compare And Swap，比较并交换是原子操作的一种，可用于在多线程编程中实现不被打断的数据交换操作，从而避免多线程同时改写某一数据时由于执行顺序不确定性以及中断的不可预知性产生的数据不一致问题。该操作通过将内存中的值与指定值oldval进行比较，当内存中的值与oldval一样时将内存中的值替换为新值newval。 现在几乎所有的CPU指令都支持CAS的原子操作，X86下对应的是 `CMPXCHG` 汇编指令。有了这个原子操作，我们就可以用其来实现各种无锁（lock free）的数据结构。
+
+### C++ 的新并发哈希映射
+https://preshing.com/20160201/new-concurrent-hash-maps-for-cpp/    
+https://github.com/preshing/junction
 
 ## linux大小端问题
 
@@ -220,12 +313,115 @@ BOOL IsBigEndian()
     库函数调用是系统无关的，因此可移植性好。
     由于库函数调用是基于C库的，因此也就不可能用于内核空间的驱动程序中对设备的操作
 
+## 常见问题
 
-
-## PCB
+### PCB
 32位系统一个进程最多有多少堆内存?
 
 + 32位系统进程地址空间是4G, 用户可访问的空间是3G 左右。
 + 一个线程的默认栈大小是`ulimit -s` 8M, 一个进程最多起300个线程。
 
+### 惊群现象
+对于操作系统来说，多个进程/线程在等待同一资源是,其结果就是每当资源可用，所有的进程/线程都来竞争资源，造成的后果：
 
+*  1. 系统对用户进程/线程频繁的做无效的调度、上下文切换，系统系能大打折扣。
+*  2. 为了确保只有一个线程得到资源，用户必须对资源操作进行加锁保护，进一步加大了系统开销。
+
+#### 什么是惊群
+最常见的例子就是对于socket描述符的accept操作，当多个用户进程/线程监听在同一个端口上时，由于实际只可能accept一次，因此就会产生惊群现象，当然前面已经说过了，这个问题是一个古老的问题， **新的操作系统内核已经解决了这一问题**。
+
+#### 解决方式:独占等待
+
+当一个进程调用 wake_up 在等待队列上，所有的在这个队列上等待的进程被置为可运行的。这在许多情况下是正确的做法。但有时，可能只有一个被唤醒的进程将成功获得需要的资源，而其余的将再次休眠。这时如果等待队列中的进程数目大，这可能严重降低系统性能。为此，内核开发者增加了一个“独占等待”选项。它与一个正常的睡眠有 2 个重要的不同:
+
+1. 当等待队列入口设置了 `WQ_FLAG_EXCLUSEVE` 标志，它被添加到等待队列的尾部；否则，添加到头部。
+
+2. 当 wake_up 被在一个等待队列上调用, 它在唤醒第一个有 WQ_FLAG_EXCLUSIVE 标志的进程后停止唤醒.但内核仍然每次唤醒所有的非独占等待。
+
+采用独占等待要满足 2 个条件:
+
+1. 希望对资源进行有效竞争；
+2. 当资源可用时，唤醒一个进程就足够来完全消耗资源。
+
+使一个进程进入独占等待，可调用：
+```c
+void prepare_to_wait_exclusive(wait_queue_head_t *queue, wait_queue_t *wait, int state);
+
+void add_wait_queue(wait_queue_head_t *q, wait_queue_t *wait)
+{
+    unsigned long flags;
+
+    wait->flags &= ~WQ_FLAG_EXCLUSIVE;
+    spin_lock_irqsave(&q->lock, flags);
+    __add_wait_queue(q, wait);
+    spin_unlock_irqrestore(&q->lock, flags);
+}
+EXPORT_SYMBOL(add_wait_queue);
+
+void add_wait_queue_exclusive(wait_queue_head_t *q, wait_queue_t *wait)
+{
+    unsigned long flags;
+
+    wait->flags |= WQ_FLAG_EXCLUSIVE;
+    spin_lock_irqsave(&q->lock, flags);
+    __add_wait_queue_tail(q, wait);
+    spin_unlock_irqrestore(&q->lock, flags);
+}
+EXPORT_SYMBOL(add_wait_queue_exclusive);
+```
+注意：无法使用 wait_event 和它的变体来进行独占等待.
+
+也就是说，对于互斥等待的行为，比如如对一个listen后的socket描述符，多线程阻塞accept时，系统内核只会唤醒所有正在等待此时间的队列的第一个，队列中的其他人则继续等待下一次事件的发生，这样就避免的多个线程同时监听同一个socket描述符时的惊群问题。
+
+#### 惊群问题出现场景
+Linux2.6内核版本之前系统API中的accept调用
+
+在Linux2.6内核版本之前，当多个线程中的accept函数同时监听同一个listenfd的时候，如果此listenfd变成可读，则系统会唤醒所有使用accept函数等待listenfd的所有线程（或进程），但是最终只有一个线程可以accept调用返回成功，其他线程的accept函数调用返回EAGAIN错误，线程回到等待状态，这就是accept函数产生的惊群问题。但是在Linux2.6版本之后，内核解决了accept函数的惊群问题，当内核收到一个连接之后，只会唤醒等待队列上的第一个线程（或进程），从而避免了惊群问题。
+
+<font color=#0022ff>epoll函数中的惊群问题</font>
+
+如果我们使用多线程epoll对同一个fd进行监控的时候，当fd事件到来时，内核会把所有epoll线程唤醒，因此产生惊群问题。为何内核不能像解决accept问题那样解决epoll的惊群问题呢？内核可以解决accept调用中的惊群问题，是因为内核清楚的知道accept调用只可能一个线程调用成功，其他线程必然失败。而对于epoll调用而言，内核不清楚到底有几个线程需要对该事件进行处理，所以只能将所有线程全部唤醒。
+
+<font color=#0022ff>epoll惊群解决办法</font>
+
+1. 对于epll函数调用的惊群问题解决办法可以参考Nginx的解决办法，多个进程将listenfd加入到epoll之前，首先尝试获取一个全局的accept_mutex互斥锁，只有获得该锁的进程才可以把listenfd加入到epoll中，当网络连接事件到来时，只有epoll中含有listenfd的线程才会被唤醒并处理网络连接事件。从而解决了epoll调用中的惊群问题。(epoll也可以避免惊群，4.5内核加入了EPOLLEXCLUSIVE选项。)
+
+    a. nginx-1.20.1/src/event/ngx_event.c
+```c
+462:extern ngx_atomic_t          *ngx_accept_mutex_ptr;
+463:extern ngx_shmtx_t            ngx_accept_mutex;
+464:extern ngx_uint_t             ngx_use_accept_mutex;
+466:extern ngx_uint_t             ngx_accept_mutex_held;
+467:extern ngx_msec_t             ngx_accept_mutex_delay;
+```
+
+    b. v5.14/include/uapi/linux/eventpoll.h
+```c 
+/* Set exclusive wakeup mode for the target file descriptor */
+#define EPOLLEXCLUSIVE    ((__force __poll_t)(1U << 28))
+
+/*
+ * epoll adds to the wakeup queue at EPOLL_CTL_ADD time only,
+ * so EPOLLEXCLUSIVE is not allowed for a EPOLL_CTL_MOD operation.
+ * Also, we do not currently supported nested exclusive wakeups.
+ */
+if (ep_op_has_event(op) && (epds->events & EPOLLEXCLUSIVE)) {
+    if (op == EPOLL_CTL_MOD)
+        goto error_tgt_fput;
+    if (op == EPOLL_CTL_ADD && (is_file_epoll(tf.file) ||
+            (epds->events & ~EPOLLEXCLUSIVE_OK_BITS)))
+        goto error_tgt_fput;
+}
+```
+
+<font color=#0022ff>线程池中的惊群问题</font>
+
+在实际应用程序开发中，为了避免线程的频繁创建销毁，我们一般建立线程池去并发处理，而线程池最经典的模型就是生产者-消费者模型，包含一个任务队列，当队列不为空的时候，线程池中的线程从任务队列中取出任务进行处理。一般使用条件变量进行处理，当我们往任务队列中放入任务时，需要唤醒等待的线程来处理任务，如果我们使用C++标准库中的函数notify_all()来唤醒线程，则会将所有的线程都唤醒，然后最终只有一个线程可以获得任务的处理权，其他线程在此陷入睡眠，因此产生惊群问题。
+
+<font color=#0022ff>线程池惊群解决</font>
+对于线程池中的惊群问题，我们需要分情况看待，有时候业务需求就是需要唤醒所有线程，那么这时候使用notify_all()唤醒所有线程就不能称为”惊群问题“，因为CPU并没有无谓消耗。而对于只需要唤醒一个线程的情况，我们需要使用notify_one()函数代替notify_all()只唤醒一个线程，从而避免惊群问题。
+
+
+#### 抢锁不也是一个惊群
+
+抢锁是由操作系统在阻塞线程里挑一个唤醒。

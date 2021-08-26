@@ -147,12 +147,25 @@ TCP提供了连接的一端在结束它的发送后还能接收来自另一端�
 
 -------------
 ### 3. 滑动窗口协议（也就是对包头中窗口字段的理解）
+[book](http://docs.52im.net/extend/docs/book/tcpip/vol1/19/)
 
 [TCP拥塞控制-慢启动、拥塞避免、快重传、快启动](https://blog.csdn.net/jtracydy/article/details/52366461)
 
 参考1：https://www.cnblogs.com/ulihj/archive/2011/01/06/1927613.html
 
 参考2：http://blog.chinaunix.net/uid-26275986-id-4109679.html
+
+#### 拥塞避免算法
+![avtor](tcp_ip_pic/yongsaibimian.png)
+
+拥塞避免：指数增长，加法增加，乘法减小。
+#### 快重传与快恢复
+
+![avtor](tcp_ip_pic/quick-huifu.png)
+当收到第3个重复的ACK时，将ssthresh设置为当前拥塞窗口cwnd的一半。重传丢失的报文段。设置cwnd为ssthresh加上3倍的报文段大小。
+每次收到另一个重复的ACK时，cwnd增加1个报文段大小并发送1个分组（如果新的cwnd允许发送）。
+当下一个确认新数据的ACK到达时，设置cwnd为ssthresh（在第1步中设置的值）。这个ACK应该是在进行重传后的一个往返时间内对步骤1中重传的确认。另外，这个ACK也应该是对丢失的分组和收到的第1个重复的ACK之间的所有中间报文段的确认。这一步采用的是拥塞避免，因为当分组丢失时我们将当前的速率减半。
+
 
 先上两个概念：
 通告接收窗口（rwnd）：预防应用程序发送的数据超过对方的缓冲区，接收方使用的流量控制。

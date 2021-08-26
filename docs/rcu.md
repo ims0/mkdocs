@@ -75,6 +75,10 @@ RCU 的关键思想有两个：1）复制后更新；2）延迟回收内存。�
 ```c
 rcu_read_lock()
 rcu_read_unlock()
+rcu_read_lock_bh()
+rcu_read_unlock_bh()
+rcu_read_lock_sched()
+rcu_read_unlock_sched()
 synchronize_rcu()/call_rcu()
 rcu_assign_pointer()
 rcu_dereference()

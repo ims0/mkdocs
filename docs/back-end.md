@@ -1,52 +1,4 @@
-[toc]
-
 # 语言类（C++）：
-
-## STL原理及实现：
-STL各类型容器实现，STL共有六大组件
-+ STL提供六大组件，彼此可以组合套用：
-
-1.  容器（Containers）：各种数据结构，如：序列式容器vector、list、deque、关联式容器set、map、multiset、multimap。用来存放数据。从实现的角度来看，STL容器是一种class template。
-
-2.  算法（algorithms）：各种常用算法，如：sort、search、copy、erase。从实现的角度来看，STL算法是一种 function template。注意一个问题：任何的一个STL算法，都需要获得由一对迭代器所标示的区间，用来表示操作范围。这一对迭代器所标示的区间都是前闭后开区间，例如[first, last)
-
-3.  迭代器（iterators）：容器与算法之间的胶合剂，是所谓的“泛型指针”。共有五种类型，以及其他衍生变化。从实现的角度来看，迭代器是一种将 operator*、operator->、operator++、operator- - 等指针相关操作进行重载的class template。所有STL容器都有自己专属的迭代器，只有容器本身才知道如何遍历自己的元素。原生指针(native pointer)也是一种迭代器。
-
-4.  仿函数（functors）：行为类似函数，可作为算法的某种策略（policy）。从实现的角度来看，仿函数是一种重载了operator（）的class或class template。一般的函数指针也可视为狭义的仿函数。
-
-5.  配接器（adapters）：一种用来修饰容器、仿函数、迭代器接口的东西。例如：STL提供的queue 和 stack，虽然看似容器，但其实只能算是一种容器配接器，因为它们的底部完全借助deque，所有操作都由底层的deque供应。改变 functors接口者，称为function adapter；改变 container 接口者，称为container adapter；改变iterator接口者，称为iterator adapter。
-
-6.  配置器（allocators）：负责空间配置与管理。从实现的角度来看，配置器是一个实现了动态空间配置、空间管理、空间释放的class template。
-
-这六大组件的交互关系：container（容器） 通过 allocator（配置器） 取得数据储存空间，algorithm（算法）通过 iterator（迭代器）存取 container（容器） 内容，functor（仿函数） 可以协助 algorithm（算法） 完成不同的策略变化，adapter（配接器） 可以修饰或套接 functor（仿函数）
-
-* 序列式容器：
-    vector-数组，元素不够时再重新分配内存，拷贝原来数组的元素到新分配的数组中。
-    list－单链表。
-    deque-分配中央控制器map(并非map容器)，map记录着一系列的固定长度的数组的地址. 记住这个map仅仅保存的是数组的地址,真正的数据在数组中存放着. deque先从map中央的位置(因为双向队列，前后都可以插入元素)找到一个数组地址，向该数组中放入数据，数组不够时继续在map中找空闲的数组来存数据。当map也不够时重新分配内存当作新的map,把原来map中的内容copy的新map中。所以使用deque的复杂度要大于vector，尽量使用vector。
-
-stack-基于deque。
-    queue-基于deque。
-    heap-完全二叉树，使用最大堆排序，以数组(vector)的形式存放。
-    priority_queue-基于heap。
-    slist-双向链表。
-
-* 关联式容器：
-    1. set,map,multiset,multimap-基于红黑树(RB-tree)，
-    一种加上了额外平衡条件的二叉搜索树。
-    2. hash_map,hash_set,hash_multiset,hash_multimap-基于hashtable。
-    hash table-散列表:
-       将待存数据的key经过映射函数变成一个数组(一般是vector)的索引，例如：数据的key%数组的大小＝数组的索引(一般文本通过算法也可以转换为数字)，然后将数据当作此索引的数组元素。有些数据的key经过算法的转换可能是同一个数组的索引值(碰撞问题，可以用线性探测，二次探测来解决)，STL是用开链的方法来解决的，每一个数组的元素维护一个list，他把相同索引值的数据存入一个list，这样当list比较短时执行**删除，插入，搜索**等算法比较快。
-
-
- * [STL六大组件](http://blog.csdn.net/chenguolinblog/article/details/30336805)
-
-什么是“标准非STL容器”？
-
-list和vector有什么区别？
-
-+ vector拥有一段连续的内存空间，因此支持随机存取，如果需要高效的随即存取，而不在乎插入和删除的效率，使用vector。
-+ list拥有一段不连续的内存空间，因此不支持随机存取，如果需要大量的插入和删除，而不关心随即存取，则应使用list。
 
 ## 虚函数：
 虚函数的作用和实现原理，什么是虚函数,有什么作用?
@@ -169,130 +121,6 @@ int main()
     虚继承的特点是，在任何派生类中的virtual基类总用同一个（共享）对象表示，
 [C++虚拟继承](http://blog.csdn.net/hyg0811/article/details/11951855)
 
-## 设计模式：
-
-C++单例模式写法:
-
-+ 静态化并不是单例 (Singleton) 模式:
-
-第一, 静态成员变量初始化顺序不依赖构造函数, 得看编译器心情的, 没法保证初始化顺序 (极端情况: 有 a b 两个成员对象, b 需要把 a 作为初始化参数传入, 你的类就 必须 得要有构造函数, 并确保初始化顺序). 
-
-第二, 最严重的问题, 失去了面对对象的重要特性 -- "多态", 静态成员方法不可能是 virtual 的.  Log 类的子类没法享受 "多态" 带来的便利.
-
-```
-class Log {
-public:
-    static void Write(char const *logline);
-    static bool SaveTo(char const *filename);
-private:
-    static std::list<std::string> m_data;
-};
-
-In log. cpp we need to add
-std::list<std::string> Log::m_data;
-
-```
-
-**饿汉模式**: 是指单例实例在程序运行时被立即执行初始化:
-
-```
-    class Log {
-    public:
-      static Log* Instance() {
-        return &m_pInstance;
-      }
-
-      virtual void Write(char const *logline);
-      virtual bool SaveTo(char const *filename);
-
-    private:
-      Log();              // ctor is hidden
-      Log(Log const&);    // copy ctor is hidden
-
-      static Log m_pInstance;
-      static std::list<std::string> m_data;
-    };
-    // in log. cpp we have to add
-    Log Log::m_pInstance;
-```
- 这种模式的问题也很明显, 类现在是多态的, 但静态成员变量初始化顺序还是没保证.
-
-**懒汉模式** (堆-粗糙版): 单例实例只在第一次被使用时进行初始化:
-```
-    class Log {
-
-    public:
-      static Log* Instance() {
-        if (!m_pInstance)
-          m_pInstance = new Log;
-        return m_pInstance;
-      }
-
-      virtual void Write(char const *logline);
-      virtual bool SaveTo(char const *filename);
-
-    private:
-      Log();        // ctor is hidden
-      Log(Log const&);    // copy ctor is hidden
-
-      static Log* m_pInstance;
-      static std::list<std::string> m_data;
-    };
-    // in log. cpp we have to add
-    Log* Log::m_pInstance = NULL;
-```
-Instance() 只在第一次被调用时为 m_pInstance 分配内存并初始化.  嗯, 看上去所有的问题都解决了, 初始化顺序有保证, 多态也没问题.
-    程序退出时, 析构函数没被执行.  这在某些设计不可靠的系统上会导致资源泄漏, 比如文件句柄, socket 连接, 内存等等
-    对于这个问题, 比较土的解决方法是, 给每个 Singleton 类添加一个 destructor() 方法:
-
-
-+ 懒汉模式 (局部静态变量-最佳版)
-
-它也被称为 Meyers Singleton [Meyers]:
-```
-#include<iostream>
-#include<vector>
-class Log {
-    public:
-        static Log& Instance() {
-            static Log singletonLog;
-            return singletonLog;
-        }
-        void Write(char const *logLine){
-            m_data.push_back(logLine);
-        };
-        bool SaveTo(char const *filename);
-        bool Print(){
-            for( auto &line : m_data ){
-                std::cout<<line<<std::endl;
-            }
-        }
-    private:
-        Log(){};          // ctor is hidden
-        Log(Log const&);      // copy ctor is hidden
-        Log& operator=(Log const&);  // assign op is hidden
-        static std::vector<std::string> m_data;
-};
-std::vector<std::string> Log::m_data;
-int main()
-{
-    Log::Instance().Write("hello");
-    Log::Instance().Print();
-    return 0;
-}
-
-```
-
-在 Instance() 函数内定义局部静态变量的好处是, theLog `` 的构造函数只会在第一次调用 ``Instance() 时被初始化, 达到了和 "堆栈版" 相同的动态初始化效果, 保证了成员变量和 Singleton 本身的初始化顺序.
-
-它还有一个潜在的安全措施, Instance() 返回的是对局部静态变量的引用, 如果返回的是指针, Instance() 的调用者很可能会误认为他要检查指针的有效性, 并负责销毁.  构造函数和拷贝构造函数也私有化了, 这样类的使用者不能自行实例化.
-
-另外, 多个不同的 Singleton 实例的析构顺序与构造顺序相反.
-
-[C++ Singleton (单例) 模式最优实现](http://blog.yangyubo.com/2009/06/04/best-cpp-singleton-pattern/)
-
-[C++中的单例模式](http://www.cnblogs.com/xiehongfeng100/p/4781013.html)
-
 ### 用C++设计一个不能被继承的类。
 
 + **构造函数或析构函数为私有函数**，所以该类是无法被继承的，
@@ -349,7 +177,6 @@ C++四种强制类型转换，
 
 + 指针P ++具体移动的字节数等于指针指向的变量类型大小.
 
-const,volatile修饰指针的含义，
 堆和栈上的指针，
     指针所指向的这块内存是在哪里分配的,在堆上称为堆上的指针,在栈上为栈上的指针.
     在堆上的指针,可以保存在全局数据结构中,供不同函数使用访问同一块内存.
@@ -622,9 +449,6 @@ Apache 模型（Process Per Connection，简称PPC），TPC（ThreadPer Connecti
     因为那将是返回给客户端的值，客户端要使用这个数据来计算数据报在网络上来回所花费的时间。图 6-8 表示了怎样建立这样的一个 UDP 服务器。
 
 
-
-
-
 ## 异步I/O模式 
 //比如写操作，只需用写，不一定写入磁盘(这就是异步I/O)的好处。异步IO的好处效率高。
     
@@ -748,23 +572,6 @@ select的本质是采用32个整数的32位，即32\*32= 1024来标识，fd值�
  1. epoll同样只告知那些就绪的文件描述符，而且当我们调用epoll_wait()获得就绪文件描述符时，返回的不是实际的描述符，而是一个代表就绪描述符数量的值，你只需要去epoll指定的一个数组中依次取得相应数量的文件描述符即可，这里也使用了内存映射（mmap）技术，这样便彻底省掉了这些文件描述符在系统调用时复制的开销。
 
  1. 另一个本质的改进在于epoll采用**基于事件的就绪通知方式**。在select/poll中，进程只有在调用一定的方法后，内核才对所有监视的文件描述符进行扫描，而epoll事先通过epoll_ctl()来注册一个文件描述符，一旦基于某个文件描述符就绪时，内核会采用类似callback的回调机制，迅速激活这个文件描述符，当进程调用epoll_wait()时便得到通知。
-
-### 惊群现象
-举一个很简单的例子，当你往一群鸽子中间扔一块食物，虽然最终只有一个鸽子抢到食物，但所有鸽子都会被惊动来争夺，没有抢到食物的鸽子只好回去继续睡觉，等待下一块食物到来。这样，每扔一块食物，都会惊动所有的鸽子，即为惊群。对于操作系统来说，多个进程/线程在等待同一资源是，也会产生类似的效果，其结果就是每当资源可用，所有的进程/线程都来竞争资源，造成的后果：
-
-*    1）系统对用户进程/线程频繁的做无效的调度、上下文切换，系统系能大打折扣。
-*    2）为了确保只有一个线程得到资源，用户必须对资源操作进行加锁保护，进一步加大了系统开销。
-
-### 什么是惊群
-最常见的例子就是对于socket描述符的accept操作，当多个用户进程/线程监听在同一个端口上时，由于实际只可能accept一次，因此就会产生惊群现象，当然前面已经说过了，这个问题是一个古老的问题，新的操作系统内核已经解决了这一问题。
-
-linux内核解决惊群问题的方法
-
-对于一些已知的惊群问题，内核开发者增加了一个“互斥等待”选项。一个互斥等待的行为与睡眠基本类似，主要的不同点在于：
-* 1）当一个等待队列入口有 WQ_FLAG_EXCLUSEVE 标志置位, 它被添加到等待队列的尾部.  没有这个标志的入口项, 相反, 添加到开始.
-* 2）当 wake_up 被在一个等待队列上调用时, 它在唤醒第一个有 WQ_FLAG_EXCLUSIVE 标志的进程后停止。
-
-也就是说，对于互斥等待的行为，比如如对一个listen后的socket描述符，多线程阻塞accept时，系统内核只会唤醒所有正在等待此时间的队列的第一个，队列中的其他人则继续等待下一次事件的发生，这样就避免的多个线程同时监听同一个socket描述符时的惊群问题。
 
 
 ### 块设备和字符设备有什么区别
@@ -946,22 +753,6 @@ C++: C++ primer -> effective C++->深度探索C++对象模型 ->stl源码分析-
 
 java：java编程思想->java并发编程->深入理解Java虚拟机：JVM高级特性与最佳实践
 
-+ 算法和数据结构：
-
-算法导论->数据结构与算法分析(维斯)->编程之美->剑指offer
-
-+ 操作系统：
-
-深入理解计算机操作系统->编译原理（龙书）
-    鸟哥的linux私房菜->linux内核设计与实现->深入理解linux内核
-    linux shell脚本攻略（短小精悍）
-
-+ 网络编程：
-
-TCP/IP协议详解v1->
-unix高级环境编程->
-unix网络编程（卷1&卷2）->
-unix编程艺术(进阶)
 
 + 视野：
 
@@ -975,19 +766,4 @@ unix编程艺术(进阶)
     编写可读代码的艺术，
     headfirst设计模式
 
-## 相关网络资源
 
-    Coolshell：http://coolshell.cn/
-    Matrix67大牛的博客：http://www.matrix67.com/blog/。
-    July的CSDN博客：http://blog.csdn.net/v_JULY_v。
-    何海涛博客：http://zhedahht.blog.163.com/。
-    笔试面试的经典：Cracking the coding interview--问题与解答：
-    http://hawstein. com/posts/ctci-solutions-contents. html
-    LeetCode：http://leetcode. com/
-    这里有不少笔试题集锦：http://blog.csdn.net/hackbuteer1
-    程序员编程艺术：面试和算法心得http://taop.marchtea.com/
-
-## 本文参考资料
-
-江南烟雨 http://blog.csdn.net/xiajun07061225/article/details/12844801
-胡成 腾讯后台开发面试题及答案

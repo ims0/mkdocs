@@ -1,7 +1,3 @@
-[toc]
-
-#
-
 ## 进程
 
 内核把进程的列表放在叫做任务队列的双向循环链表中，每个节点是进程描述符定义在<linux/sched.h>,描述了一个正在执行的程序：打开的文件，地址空间，挂起信号，进程的状态···。
@@ -76,7 +72,7 @@ nice值 (译者注：nice值由nice函数设定，该值表示进程的优先级
 
 不继承异步输入和输出
 
-## vfork
+### vfork
 
 1.  fork  （）：子进程拷贝父进程的数据段，代码段
     vfork （ ）：子进程与父进程共享数据段
@@ -113,7 +109,65 @@ int main()
         printf("I am the parent process,ID is %d\n",getpid());
     }
     return 0;
+}
 ```
+## 线程
+同一进程间的线程究竟共享哪些资源呢，而又各自独享哪些资源呢？
+
+### 共享的资源有
+1. 堆 由于堆是在进程空间中开辟出来的，所以它是理所当然地被共享的；因此new出来的都是共享的（16位平台上分全局堆和局部堆，局部堆是独享的）
+2. 全局变量 它是与具体某一函数无关的，所以也与特定线程无关；因此也是共享的
+3. 静态变量 虽然对于局部变量来说，它在代码中是“放”在某一函数中的，但是其存放位置和全局变量一样，存于堆中开辟的.bss和.data段，是共享的
+4. 文件等公用资源   这个是共享的，使用这些公共资源的线程必须同步。Win32 提供了几种同步资源的方式，包括信号、临界区、事件和互斥体。
+### 独享的资源有
+1. 栈 栈是独享的
+2. 寄存器   这个可能会误解，因为电脑的寄存器是物理的，每个线程去取值难道不一样吗？其实线程里存放的是副本，包括程序计数器PC
+
+## 进程传递文件描述符
+
+In fact, the file descriptors should be passed in a special way so the kernel could duplicate the file descriptor for the receiving process (and maybe the descriptor will have another value after the duplicating). That's why there is a special ancillary message type (SCM_RIGHTS) to pass file descriptors.
+
+The following would work (I omitted some of the error handling). 
+See also man 3 cmsg, there are some examples.
+```c
+//In client:
+memset(&child_msg,   0, sizeof(child_msg));
+char cmsgbuf[CMSG_SPACE(sizeof(int))];
+child_msg.msg_control = cmsgbuf; // make place for the ancillary message to be received
+child_msg.msg_controllen = sizeof(cmsgbuf);
+
+printf("Waiting on recvmsg\n");
+rc = recvmsg(worker_sd, &child_msg, 0);
+struct cmsghdr *cmsg = CMSG_FIRSTHDR(&child_msg);
+if (cmsg == NULL || cmsg -> cmsg_type != SCM_RIGHTS) {
+     printf("The first control structure contains no file descriptor.\n");
+     exit(0);
+}
+memcpy(&pass_sd, CMSG_DATA(cmsg), sizeof(pass_sd));
+printf("Received descriptor = %d\n", pass_sd);
+
+//In server:
+
+memset(&parent_msg, 0, sizeof(parent_msg));
+struct cmsghdr *cmsg;
+char cmsgbuf[CMSG_SPACE(sizeof(accepted_socket_fd))];
+parent_msg.msg_control = cmsgbuf;
+parent_msg.msg_controllen = sizeof(cmsgbuf); // necessary for CMSG_FIRSTHDR to return the correct value
+cmsg = CMSG_FIRSTHDR(&parent_msg);
+cmsg->cmsg_level = SOL_SOCKET;
+cmsg->cmsg_type = SCM_RIGHTS;
+cmsg->cmsg_len = CMSG_LEN(sizeof(accepted_socket_fd));
+memcpy(CMSG_DATA(cmsg), &accepted_socket_fd, sizeof(accepted_socket_fd));
+parent_msg.msg_controllen = cmsg->cmsg_len; // total size of all control blocks
+
+if((sendmsg(server_sd, &parent_msg, 0)) < 0)
+{
+    perror("sendmsg()");
+    exit(EXIT_FAILURE);
+}
+
+```
+
 
 ## 协程
 协程是一种用户态的轻量级线程。本篇主要研究协程的C/C++的实现。
@@ -208,6 +262,16 @@ mcontext_t类型与机器相关，并且不透明.ucontext_t结构体则至少�
 
 简单说来，  `getcontext`获取当前上下文，`setcontext`设置当前上下文，`swapcontext`切换上下文，`makecontext`创建一个新的上下文。
 
+
+## 位置无关代码
+
+http://ybin.cc/compiler/position-independent-code-in-shared-library/
+
+Position Independent Code (PIC) in shared libraries
+https://eli.thegreenplace.net/2011/11/03/position-independent-code-pic-in-shared-libraries/
+
+### linux共享库注射
+https://www.docin.com/p-634172083.html
 
 --------
 
