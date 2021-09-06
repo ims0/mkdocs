@@ -208,44 +208,56 @@ auto f= []{return 1;};
 [&,identifier_list] //identifier_list 采用值捕获
 [=,identifier_list] //identifier_list 采用引用捕获
 ```
-### 智能指针
-#### share & weak boost实现
+### 智能指针实现
+
+#### share_ptr
+
+* 一个友元类：weak_ptr
+* 两个成员变量:
+    1. 原始指针 `T*ptr`
+    2. 类静态成员`map<T *, int>` 记录原始指针的计数
+
+#### weak_ptr 
+一个成员变量: `shared_ptr<T> *_ptr`
+
+使用强指针初始化，使用lock函数获取强指针
+
 
 ```cpp
 #include <iostream>
 #include <map>
 using namespace std;
 
-template <typename T> class mweak_ptr;
+template <typename T> class my_weak_ptr;
 
-template <typename T> class mshared_ptr {
+template <typename T> class my_shared_ptr {
 public:
-  mshared_ptr(T *ptr = NULL);                  //构造方法
-  ~mshared_ptr();                              //析构方法
-  mshared_ptr(mshared_ptr<T> &src);            //拷贝构造
-  mshared_ptr &operator=(mshared_ptr<T> &src); //赋值运算符重载
+  my_shared_ptr(T *ptr = NULL);                  //构造方法
+  ~my_shared_ptr();                              //析构方法
+  my_shared_ptr(my_shared_ptr<T> &src);            //拷贝构造
+  my_shared_ptr &operator=(my_shared_ptr<T> &src); //赋值运算符重载
   T &operator*();                              //解引用运算符重载
   T *operator->();                             //成员运算符重载
 private:
   T *_ptr;
-  static map<T *, int> _map; //静态数据成员需要在类外进行初始化
-  friend class mweak_ptr<T>;
+  static map<T *, int> _map; //对象指针作为key，value是计数变量
+  friend class my_weak_ptr<T>;//weak_ptr 作为友元
 };
 
-template <typename T> map<T *, int> mshared_ptr<T>::_map;
+template <typename T> map<T *, int> my_shared_ptr<T>::_map;
 
 template <typename T>
-mshared_ptr<T>::mshared_ptr(T *ptr) //构造方法
+my_shared_ptr<T>::my_shared_ptr(T *ptr) //构造方法
 {
-  cout << "mshared_ptr的构造方法正被调用！" << endl;
+  cout << "my_shared_ptr的构造方法正被调用！" << endl;
   _ptr = ptr;
   _map.insert(make_pair(_ptr, 1));
 }
 
 template <typename T>
-mshared_ptr<T>::~mshared_ptr() //析构方法
+my_shared_ptr<T>::~my_shared_ptr() //析构方法
 {
-  cout << "mshared_ptr的析构方法正被调用！" << endl;
+  cout << "my_shared_ptr的析构方法正被调用！" << endl;
   if (--_map[_ptr] <= 0 && NULL != _ptr) {
     delete _ptr;
     _ptr = NULL;
@@ -254,15 +266,15 @@ mshared_ptr<T>::~mshared_ptr() //析构方法
 }
 
 template <typename T>
-mshared_ptr<T>::mshared_ptr(mshared_ptr<T> &src) //拷贝构造
+my_shared_ptr<T>::my_shared_ptr(my_shared_ptr<T> &src) //拷贝构造
 {
-  cout << "mshared_ptr的拷贝构造方法正被调用！" << endl;
+  cout << "my_shared_ptr的拷贝构造方法正被调用！" << endl;
   _ptr = src._ptr;
   _map[_ptr]++;
 }
 
 template <typename T>
-mshared_ptr<T> &mshared_ptr<T>::operator=(mshared_ptr<T> &src) //赋值运算符重载
+my_shared_ptr<T> &my_shared_ptr<T>::operator=(my_shared_ptr<T> &src) //赋值运算符重载
 {
   if (_ptr == src._ptr) {
     return *this;
@@ -280,64 +292,63 @@ mshared_ptr<T> &mshared_ptr<T>::operator=(mshared_ptr<T> &src) //赋值运算符
 }
 
 template <typename T>
-T &mshared_ptr<T>::operator*() //解引用运算符重载
+T &my_shared_ptr<T>::operator*() //解引用运算符重载
 {
   return *_ptr;
 }
 
 template <typename T>
-T *mshared_ptr<T>::operator->() //成员运算符重载
+T *my_shared_ptr<T>::operator->() //成员运算符重载
 {
   return _ptr;
 }
 
-template <typename T> class mweak_ptr {
+/******* weak_ptr define *******************/
+template <typename T> class my_weak_ptr {
 public:
-  mweak_ptr() {}                  //需要提供一个默认的构造方法
-  mweak_ptr(mshared_ptr<T> &src); //构造方法
-  mshared_ptr<T> lock();
+  my_weak_ptr() {}                  //默认构造方法
+  my_weak_ptr(my_shared_ptr<T> &src); //构造方法
+  my_shared_ptr<T> lock();
 
 private:
-  mshared_ptr<T> *_ptr;
+  my_shared_ptr<T> *_ptr;
 };
 
 template <typename T>
-mweak_ptr<T>::mweak_ptr(mshared_ptr<T> &src) //使用强指针进行构造
+my_weak_ptr<T>::my_weak_ptr(my_shared_ptr<T> &src) //使用shared_ptr构造
 {
   _ptr = &src;
 }
 
 template <typename T>
-mshared_ptr<T> mweak_ptr<T>::lock() //返回一个可用的强指针
+my_shared_ptr<T> my_weak_ptr<T>::lock() //返回一个shared_ptr
 {
   int count = _ptr->_map[_ptr->_ptr];
   if (count > 0) //从shared_ptr获得一个可用的shared_ptr对象。从而操作资源
   {
-    return *_ptr;
+    return *_ptr;//接收方copy一份，增加了计数
   } else {
     return NULL;
   }
 }
-
+//测试类
 class B;
 class A {
 public:
-  mweak_ptr<B> _ptr_B; //类内存放的是弱指针，将在合适的时间转变成强指针！
+  my_weak_ptr<B> _ptr_B; //类内存放的是弱指针，将在合适的时间转变成强指针！
 };
 class B {
 public:
-  mweak_ptr<A> _ptr_A;
+  my_weak_ptr<A> _ptr_A;
 };
 
 int main() {
-  mshared_ptr<A> ptr_A(new A);
-  mshared_ptr<B> ptr_B(new B);
+  my_shared_ptr<A> ptr_A(new A);
+  my_shared_ptr<B> ptr_B(new B);
   ptr_A->_ptr_B = ptr_B;
   ptr_B->_ptr_A = ptr_A;
   return 0;
 }
-
-
 ```
 #### auto_ptr不安全的原因
 
@@ -393,7 +404,7 @@ int main()
     pwin = films[1]; // films[1] lose ownership
 
     cout << "films data is: " << endl;
-    for(unique_ptr<string> s : films)
+    for(unique_ptr<string> &s : films)
         cout << *s << endl;
     cout << "pwin: " << *pwin << endl;
     return 0;
@@ -766,16 +777,42 @@ int main(int argc, char *argv[]) {
 
 ```
 
-## [C++11 std::move和std::forward](https://www.jianshu.com/p/b90d1091a4ff)
-forward() 必须配合模板使用，因为只有在模板参数T&&下才能出发引用折叠，
-T&&与具体的Foo&&不同，后者是具体类型的右值引用，而T&&可以是const Foo&,Foo&,F&&.
+## [完美转发](https://www.jianshu.com/p/b90d1091a4ff)
+### forward使用场景
+函数模板通用引用场景，对传入的右值，会被推导为值传递，生成临时变量。
+导致被转发函数的右值引用绑到左值临时变量而编译出错。     
+error: cannot bind rvalue reference of type ‘int&&’ to lvalue of type ‘int’
+```cpp  hl_lines="9"
+#include <iostream>
+#include <utility>
+using namespace std;
 
+void g(int &i, int &&j) { cout << i++ << j++ << endl; }
+
+template <typename F, typename T1, typename T2>
+void flip(F func, T1 &&t1, T2 &&t2) {
+    func(t1, std::forward<T2>(t2));
+}
+
+int main() {
+    int lval = 1;
+    flip(g, lval, 2);
+    cout << lval << endl;
+    return 0;
+}
+
+```
 std::move()和std::forward()对比
 
 + std::move执行到右值的无条件转换。就其本身而言，它没有move任何东西。
 + std::forward只有在它的参数绑定到一个右值上的时候，它才转换它的参数到一个右值。
 + std::move和std::forward只不过就是执行类型转换的两个函数；std::move没有move任何东西，std::forward没有转发任何东西。在运行期，它们没有做任何事情。
 + std::forward<T>()不仅可以保持左值或者右值不变，同时还可以保持const、Lreference、Rreference、validate等属性不变；
+
+### 转发失败的场景
+
+* 当模板类型推导失败或者推导出错误类型，完美转发会失败。
+* 导致完美转发失败的实参种类有花括号初始化，作为空指针的0或者NULL，仅有声明的整型static const数据成员，模板和重载函数的名字，位域。
 
 ```cpp
 #include <iostream>

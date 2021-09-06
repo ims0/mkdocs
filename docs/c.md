@@ -31,6 +31,13 @@ CPU有可能仍旧会乱序执行指令，导致程序依赖的逻辑出错，vo
 asm volatile("" ::: "memory");        // Prevent compiler reordering
 asm volatile("mfence" ::: "memory");  // Prevent memory reordering
 ```
+#### volatile & atomic 
+* std::atomic用于在不使用互斥锁情况下，来使变量被多个线程访问的情况。是用来编写并发程序的一个工具。
+* volatile用在读取和写入不应被优化掉的内存上。是用来处理特殊内存的一个工具。
+
+#### java中volatile关键字作用
+保证变量对所有线程的可见性。当一条线程修改了变量值，新值对于其他线程来说是立即可以得知的。
+禁止指令重排序优化。使用 volatile 变量进行写操作，汇编指令带有 lock 前缀，相当于一个内存屏障，编译器不会将后面的指令重排到内存屏障之前
 
 ## atomic_inc(&v)原子操作简述
  atomic_inc(&v)对变量v用锁定总线的单指令进行不可分解的"原子"级增量操作，避免v的值由于中断或多处理器同时操作造成不确定状态。
