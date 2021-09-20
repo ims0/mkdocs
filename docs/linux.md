@@ -278,8 +278,47 @@ mcontext_t类型与机器相关，并且不透明.ucontext_t结构体则至少�
 
 简单说来，  `getcontext`获取当前上下文，`setcontext`设置当前上下文，`swapcontext`切换上下文，`makecontext`创建一个新的上下文。
 
+## 动态库
+### 动态链接库两种加载方式：
 
-## 位置无关代码
+#### 隐式链接
+通过隐式链接引用动态链接库，在程序跑的时候将其所需要的链接库替换一个新版的(cp大法好)，就会引发程序崩溃，所以还是小心点不要动它。
+
+#### 显式链接
+显式链接，编译的时候一般不需要.so，在程序运行的时候可以动态加载或卸载.so。
+而且在加载之后，如果把.so删除或者替换，不会影响程序使用的.so，
+除非执行程序主动卸载旧的.so加载新的.so不过这个过程是已知的，不会导致程序中断。
+
+```cpp
+#include <stdio.h>
+#include <stdlib.h>
+#include <dlfcn.h>
+#include <gnu/lib-names.h> /* Defines LIBM_SO (which will be a string such as "libm.so.6") */
+
+int main(void) {
+  double (*cosine)(double);
+
+  void *handle = dlopen(LIBM_SO, RTLD_LAZY);
+  if (!handle) {
+    fprintf(stderr, "%s\n", dlerror());
+    exit(EXIT_FAILURE);
+  }
+
+  dlerror(); /* Clear any existing error */
+  cosine = (double (*)(double))dlsym(handle, "cos");
+
+  char *error = dlerror();
+  if (error != NULL) {
+    fprintf(stderr, "%s\n", error);
+    exit(EXIT_FAILURE);
+  }
+
+  printf("%f\n", (cosine)(2.0));
+  dlclose(handle);
+}
+```
+
+### 位置无关代码
 
 http://ybin.cc/compiler/position-independent-code-in-shared-library/
 

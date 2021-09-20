@@ -123,14 +123,29 @@ int main()
 
 ### 用C++设计一个不能被继承的类。
 
-+ **构造函数或析构函数为私有函数**，所以该类是无法被继承的，
++ **构造函数或析构函数为私有函数**，所以该类是无法被继承的
++ 设置类的属性: **final**
 
 ### 定义一个只能在堆上定义对象的类
 
-+ 只能在堆内存上实例化的类：将**析构函数定义为private**，在栈上不能自动调用析构函数，只能手动调用。也可以将构造函数定义为private，但这样需要手动写一个函数实现对象的构造。
++ **析构函数定义为private**，在栈上不能自动调用析构函数，只能手动调用。
+```
+class Heap {
+  ~Heap();
+};
+
+Heap *h = new Heap;
+```
 
 ### 定义一个只能在栈上定义对象的类
-+ 只能在栈内存上实例化的类：将函数**operator new和operator delete**定义为private，这样使用new操作符创建对象时候，无法调用operator new，delete销毁对象也无法调用operator delete。
++ **operator new和operator delete** 定义为private，这样使用new操作符创建对象时候，无法调用operator new，delete销毁对象也无法调用operator delete。
+```
+class Stack {
+public:
+  void *operator new(size_t len) = delete;
+  void *operator new[](size_t len) = delete;
+};
+```
 
 [设计一个只能在堆上或栈上实例化的类](http://www.cnblogs.com/luxiaoxun/archive/2012/08/03/2621827.html)
 

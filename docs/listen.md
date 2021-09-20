@@ -1,53 +1,19 @@
-
 # listen
-## <font color="#0099aa">什么是 TCP 半连接队列和全连接队列?</font>
+
+* [拆解 Linux 网络包发送过程](https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&mid=2247485146&idx=1&sn=e5bfc79ba915df1f6a8b32b87ef0ef78&chksm=a6e307e191948ef748dc73a4b9a862a22ce1db806a486afce57475d4331d905827d6ca161711&scene=178&cur_album_id=1532487451997454337#rd)
+* [图解 Linux网络包接收过程](https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&mid=2247484058&idx=1&sn=a2621bc27c74b313528eefbc81ee8c0f&scene=21#wechat_redirect)
+
+## <font color="#0099aa">TCP 半连接队列和全连接队列</font>
 
 在 TCP 三次握手的时候，Linux 内核会维护两个队列，分别是：
 
-* 半连接队列，也称 SYN 队列；
-* 全连接队列，也称 accepet 队列；
+* 全连接队列，也称 accepet 队列,长度是: <font color="#0099aa">min(backlog, somaxconn)</font>
+* 半连接队列，也称 SYN 队列,长度是: <font color="#0099aa">min(backlog, somaxconn, tcp_max_syn_backlog) + 1 再上取整到 2 的幂次，但最小不能小于16</font>
 
-服务端收到客户端发起的 SYN 请求后，内核会把该连接存储到半连接队列，并向客户端响应
-SYN+ACK，接着客户端会返回 ACK，服务端收到第三次握手的 ACK 后，内核会把连接从半连接队列
-移除，然后创建新的完全的连接，并将其添加到 accept 队列，等待进程调用 accept 函数时把连接取
-出来。
-<br>
-
-### SYN Flood 攻击
-故意大量不断发送伪造的SYN报文，那么服务器就会分配大量注定无用的资源，服务器能保存的半连接的数量是有限的！
-所以当服务器受到大量攻击报文时，它就不能再接收正常的连接了，它是一种典型的DDoS攻击。
-对于应对SYN 过多的问题，linux提供了几个TCP参数：tcp_syncookies、tcp_synack_retries、tcp_max_syn_backlog、tcp_abort_on_overflow 来调整应对。
-
-### SYN Cookie
-SYNcookie就是将连接信息编码在ISN(initialsequencenumber)中返回给客户端，这时server不需要将半连接保存在队列中，而是利用客户端随后发来的ACK带回的ISN还原连接信息，以完成连接的建立，避免了半连接队列被攻击SYN包填满。
-
-linux 开关：`cat /proc/sys/net/ipv4/tcp_syncookies`
-
-#### SYN cookies 算法
-我们知道，TCP连接建立时，双方的起始报文序号是可以任意的。SYN cookies利用这一点，按照以下规则构造初始序列号：
-
-* 设t为一个缓慢增长的时间戳(典型实现是每64s递增一次)
-* 设m为客户端发送的SYN报文中的MSS选项值
-* 设s是连接的元组信息(源IP,目的IP,源端口，目的端口)和t经过密码学运算后的Hash值，即s = hash(sip,dip,sport,dport,t)，s的结果取低 24 位
-
-则初始序列号n为：
-
-* 高 5 位为t mod 32
-* 接下来3位为m的编码值
-* 低 24 位为s
-
-当客户端收到此SYN+ACK报文后，根据TCP标准，它会回复ACK报文，且报文中ack = n + 1，那么在服务器收到它时，将ack - 1就可以拿回当初发送的SYN+ACK报文中的序号了！服务器巧妙地通过这种方式间接保存了一部分SYN报文的信息。
-
-接下来，服务器需要对ack - 1这个序号进行检查：
-
-* 将高 5 位表示的t与当前之间比较，看其到达地时间是否能接受。
-* 根据t和连接元组重新计算s，看是否和低 24 一致，若不一致，说明这个报文是被伪造的。
-* 解码序号中隐藏的mss信息
-
-到此，连接就可以顺利建立了。
+* `/proc/sys/net/core/somaxconn (centos7:128,ubuntu20.04:4096)`
+* `/proc/sys/net/ipv4/tcp_max_syn_backlog(def:128)`
 
 ![avator](listen_pic/listen.png)
-
 
 ## <font color="#0099ff">为什么服务端程序都需要先 listen 一下？</font>
 
@@ -84,7 +50,7 @@ SYSCALL_DEFINE2(listen, int, fd, int, backlog)
 再接着获取了系统里的 net.core.somaxconn 内核参数的值，和用户传入的 backlog 比较后取一个最小值传入到下一步中。
 接着通过调用 sock->ops->listen 进入协议栈的 listen 函数。
 
-#### 2.2 协议栈 listen与ack队列
+#### 2.2 协议栈 listen与accept队列
 这里我们需要用到第一节中的 socket 内核对象结构图了，通过它我们可以看出 sock->ops->listen 实际执行的是 inet_listen。
 
 ```c linenums="1" hl_lines="9 10"
@@ -126,8 +92,6 @@ int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
 这里简单说下为什么可以这么强制转换，这是因为 inet_connection_sock 是包含 sock 的。tcp_sock、inet_connection_sock、inet_sock、sock 是逐层嵌套的关系，类似面向对象里的继承的概念。
 
 ![avator](listen_pic/socket_len.png)
-
-对于 TCP 的 socket 来说，sock 对象实际上是一个 tcp_sock。因此 TCP 中的 sock 对象随时可以强制类型转化为 tcp_sock、inet_connection_sock、inet_sock 来使用。
 
 在接下来的一行 reqsk_queue_alloc 中实际上包含了两件重要的事情。一是接收队列数据结构的定义。二是接收队列的申请和初始化。这两块都比较重要，我们分别在 2.3 节，和 2.4 节介绍。
 
@@ -276,7 +240,8 @@ min (backlog, somaxconn)  = min (512, 128) = 128
 min (128, tcp_max_syn_backlog) = min (128, 8192) = 128
 max (128, 8) = 128
 roundup_pow_of_two (128 + 1) = 256
-算到这里，我把半连接队列长度的计算归纳成了一句话，半连接队列的长度是 min(backlog, somaxconn, tcp_max_syn_backlog) + 1 再上取整到 2 的幂次，但最小不能小于16。 我用的内核源码是 3.10, 你手头的内核版本可能和这个稍微有些出入。
+
+半连接队列长度总结: <font color="#0099aa">len=min(backlog, somaxconn, tcp_max_syn_backlog) + 1 再上取整到 2^n，len>=16。 </font>(kernel ver:3.10)
 
 !!! note "note"
     如果你在线上遇到了半连接队列溢出的问题，想加大该队列长度，那么就需要同时考虑 somaxconn、backlog、和 tcp_max_syn_backlog 三个内核参数。
@@ -308,6 +273,39 @@ roundup_pow_of_two (128 + 1) = 256
 
 https://mp.weixin.qq.com/s/hv2tmtVpxhVxr6X-RNWBsQ
 
-[拆解 Linux 网络包发送过程](https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&mid=2247485146&idx=1&sn=e5bfc79ba915df1f6a8b32b87ef0ef78&chksm=a6e307e191948ef748dc73a4b9a862a22ce1db806a486afce57475d4331d905827d6ca161711&scene=178&cur_album_id=1532487451997454337#rd)
 
-[收包过程](https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&mid=2247484058&idx=1&sn=a2621bc27c74b313528eefbc81ee8c0f&scene=21#wechat_redirect)
+
+### SYN Flood 攻击
+故意大量不断发送伪造的SYN报文，那么服务器就会分配大量注定无用的资源，服务器能保存的半连接的数量是有限的！
+所以当服务器受到大量攻击报文时，它就不能再接收正常的连接了，它是一种典型的DDoS攻击。
+对于应对SYN 过多的问题，linux提供了几个TCP参数：tcp_syncookies、tcp_synack_retries、tcp_max_syn_backlog、tcp_abort_on_overflow 来调整应对。
+
+### SYN Cookie
+SYNcookie就是将连接信息编码在ISN(initialsequencenumber)中返回给客户端，这时server不需要将半连接保存在队列中，而是利用客户端随后发来的ACK带回的ISN还原连接信息，以完成连接的建立，避免了半连接队列被攻击SYN包填满。
+
+linux 开关：`cat /proc/sys/net/ipv4/tcp_syncookies`
+
+#### SYN cookies 算法
+我们知道，TCP连接建立时，双方的起始报文序号是可以任意的。SYN cookies利用这一点，按照以下规则构造初始序列号：
+
+* 设t为一个缓慢增长的时间戳(典型实现是每64s递增一次)
+* 设m为客户端发送的SYN报文中的MSS选项值
+* 设s是连接的元组信息(源IP,目的IP,源端口，目的端口)和t经过密码学运算后的Hash值，即s = hash(sip,dip,sport,dport,t)，s的结果取低 24 位
+
+则初始序列号n为：
+
+* 高 5 位为t mod 32
+* 接下来3位为m的编码值
+* 低 24 位为s
+
+当客户端收到此SYN+ACK报文后，根据TCP标准，它会回复ACK报文，且报文中ack = n + 1，那么在服务器收到它时，将ack - 1就可以拿回当初发送的SYN+ACK报文中的序号了！服务器巧妙地通过这种方式间接保存了一部分SYN报文的信息。
+
+接下来，服务器需要对ack - 1这个序号进行检查：
+
+* 将高 5 位表示的t与当前之间比较，看其到达地时间是否能接受。
+* 根据t和连接元组重新计算s，看是否和低 24 一致，若不一致，说明这个报文是被伪造的。
+* 解码序号中隐藏的mss信息
+
+到此，连接就可以顺利建立了。
+
+

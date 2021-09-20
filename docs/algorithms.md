@@ -3,8 +3,8 @@
 ## 查找算法
 
 ### 二叉查找(lgn)
-```cpp
-int binarySearch(int arr[], int start, int end, int target) {
+```cpp linenums="1" hl_lines="7 9"
+int binarySearch(vector<int> &arr, int start, int end, int target) {
   while (start <= end) { // 注意
     int mid = (start + end) / 2;
     if (arr[mid] == target)
@@ -14,8 +14,18 @@ int binarySearch(int arr[], int start, int end, int target) {
     else if (arr[mid] > target)
       end = mid - 1; // 注意
   }
-  return -1;
+
+  if (end < 0)
+    return start;
+  else if (start == (int)arr.size()) {
+    return end;
+  } else {
+    cout << start << ":" << end << endl;
+    return arr[start] - target < target - arr[end] ? start : end;
+  }
 }
+
+
 
 int BinSearch(int a[], int start, int end, int val) {
   if (start <= end) // 相等的情况返回，返回相等的值
@@ -91,24 +101,20 @@ void shell(int arr[], int n) {
 }
 ```
 ### 交换排序：冒泡
-
 大数向后移动
+
 ```cpp
-void bubble(int v[], int n) 
-{
-  for (int i = 1; i < n; i++) // i循环决定了冒泡的趟数是 n-1
+void bubble(vector<int> &vect) {
+  int n = vect.size();
+  for (int tail = 1; tail < n; tail++) // 每次比较需要两个元素，所以只能比较n-1次
   {
-    for (int j = 0; j < n - i; j++) // j 循环确定了每一趟的比较次数为 n-i
+    for (int j = 0; j < n - tail; j++) // j 循环确定了每一趟的比较次数为 n-i
     {
-      if (v[j] > v[j + 1]) {
-        v[j] = v[j] ^ v[j + 1];
-        v[j + 1] = v[j] ^ v[j + 1];
-        v[j] = v[j] ^ v[j + 1];
-      }
+      if (vect[j] > vect[j + 1])
+        swap(vect[j], vect[j + 1]);
     }
   }
 }
-
 ```
 
 ### 交换排序：快排
@@ -221,21 +227,24 @@ int main() {
 ```
 
 ### 选择排序：直接选择排序
-在剩余无序队列中，找出最小的元素放在最有序队列的末尾，逐步扩大有序队列长度
-```cpp
-void select_sort(int v[], int len) 
-{
-  for (int i = 0; i < len - 1; i++) {
-    int min = i;
-    for (int j = i + 1; j < len; j++)
-      min = v[min] > v[j] ? j : min;
+第一层循环变量i做最小索引的初始值，第二层从i+1开始更新最小索引，最后swap
 
-    int temp = v[i];
-    v[i] = v[min];
-    v[min] = temp;
+```cpp  linenums="1" hl_lines="7 9"
+void select(vector<int> &vect) {
+  if (vect.size() < 2) {
+    return;
+  }
+  int n = vect.size();
+  for (int i = 0; i < n - 1; ++i) {
+    int min = i;
+    for (int j = i + 1; j < n; ++j) {
+      min = vect[min] > vect[j] ? j : min;
+    }
+    swap(vect[min], vect[i]);
   }
 }
 ```
+
 ### 选择排序：堆排序
 
 heapsort 时间复杂度是O(nlgn),具有空间原址性，常数个额外空间。
@@ -261,51 +270,40 @@ heapsort 时间复杂度是O(nlgn),具有空间原址性，常数个额外空间
 由于堆的上浮下沉时间都是O(lgn),
 所以优先队列的入队出队也是O(lgn)
 
-```cpp
-static void heap_print(int arr[], int size) {
-  int num = 0;
-  for (int layer = 0; num < size; ++layer) {
-    for (int i = 0; i < (1 << layer) && num < size; ++i)
+```cpp linenums="1" hl_lines="27 28 32 33"
+void heap_print(vector<int> &arr) {
+  size_t num = 0;
+  for (int layer = 0; num < arr.size(); ++layer) {
+    for (int i = 0; i < (1 << layer) && num < arr.size(); ++i)
       printf("%3d ", arr[num++]);
     printf("\n");
   }
 }
 
-void swap(int *a, int *b) {
-  int temp = *b;
-  *b = *a;
-  *a = temp;
-}
-
-//build max heap
-void max_heapify(int arr[], int start, int end) {
-  //建立父节点指标和子节点指标
-  int dad = start;
-  int son = dad * 2 + 1;
-  while (son <= end) //若子节点指标在范围内才做比较
-  {
-    if (son + 1 <= end && arr[son] < arr[son + 1])
-      //先比较两个子节点大小，选择最大的
+void build(vector<int> &arr, int s, int e) {
+  int dad = s;
+  int son = 2 * s + 1;
+  while (son <= e) {
+    if (son + 1 <= e && arr[son] < arr[son + 1])
       son++;
-    if (arr[dad] > arr[son]) //如果父节点大於子节点代表调整完毕，直接跳出函数
+    if (arr[dad] >= arr[son])
       return;
-    else //否则交换父子内容再继续子节点和孙节点比较
-    {
-      swap(&arr[dad], &arr[son]);
+    else {
+      swap(arr[dad], arr[son]);
       dad = son;
-      son = dad * 2 + 1;
+      son = son * 2 + 1;
     }
   }
 }
-
-void heap_sort(int arr[], int len) {
-  //初始化，i从最後一个父节点开始调整
-  for (int i = len / 2 - 1; i >= 0; i--)
-    max_heapify(arr, i, len - 1);
-  //先将第一个元素和已排好元素前一位做交换，再重新调整，直到排序完毕
-  for (int i = len - 1; i > 0; i--) {
-    swap(&arr[0], &arr[i]);
-    max_heapify(arr, 0, i - 1);
+void heap(vector<int> &arr) {
+  int n = arr.size();
+  for (int i = n / 2 - 1; i >= 0; i--) {
+    build(arr, i, n - 1);
+  }
+  heap_print(arr);
+  for (int i = n - 1; i > 0; i--) {
+    swap(arr[0], arr[i]);
+    build(arr, 0, i - 1);
   }
 }
 
@@ -315,45 +313,37 @@ void heap_sort(int arr[], int len) {
 ###  归并排序
 ![avatar](dataStruct_pic/merge_sort.gif)
 
-```cpp
-void Merge(int arr[], int reg[], int start, int end) {
-  if (start >= end)
+```cpp linenums="1" hl_lines="3 10 22"
+template<typename T>
+void merges(vector<T> &arr, vector<T> &reg, int l, int r) {
+  if (l >= r)
     return;
-  int len = end - start, mid = (len >> 1) + start;
+  int mid = l + (r - l) / 2;
+  int s1 = l, e1 = mid;
+  int s2 = mid + 1, e2 = r;
+  merges(arr, reg, s1, e1);
+  merges(arr, reg, s2, e2);
+  int k = l;
+  while (s1 <= e1 && s2 <= e2) {
+    reg[k++] = arr[s1] < arr[s2] ? arr[s1++] : arr[s2++];
+  }
 
-  //分成两部分
-  int start1 = start, end1 = mid;
-  int start2 = mid + 1, end2 = end;
-  //然后合并
-  Merge(arr, reg, start1, end1);
-  Merge(arr, reg, start2, end2);
+  while (s1 <= e1) {
+    reg[k++] = arr[s1++];
+  }
 
-  int k = start;
-  //两个序列一一比较,哪的序列的元素小就放进reg序列里面,然后位置+1再与另一个序列原来位置的元素比较
-  //如此反复,可以把两个有序的序列合并成一个有序的序列
-  while (start1 <= end1 && start2 <= end2)
-    reg[k++] = arr[start1] < arr[start2] ? arr[start1++] : arr[start2++];
-
-  //然后这里是分情况,如果arr2序列的已经全部都放进reg序列了然后跳出了循环
-  //那就表示arr序列还有更大的元素(一个或多个)没有放进reg序列,所以这一步就是接着放
-  while (start1 <= end1)
-    reg[k++] = arr[start1++];
-
-  //这一步和上面一样
-  while (start2 <= end2)
-    reg[k++] = arr[start2++];
-  //把已经有序的reg序列放回arr序列中
-  for (k = start; k <= end; k++)
-    arr[k] = reg[k];
+  while (s2 <= e2) {
+    reg[k++] = arr[s2++];
+  }
+  for (int i = l; i <= r; ++i) {
+    arr[i] = reg[i];
+  }
 }
-
-void MergeSort(int arr[], const int len) {
-  //创建一个同样长度的序列,用于临时存放
-  int *reg = new int[len];
-  Merge(arr, reg, 0, len - 1);
-  delete[] reg;
+template<typename T>
+void merge(vector<T> &arr) {
+  vector<T> reg(arr.size(), 0);
+  merges(arr, reg, 0, arr.size() - 1);
 }
-
 ```
 
 

@@ -1,43 +1,17 @@
-site_name: Ims Docs
+site_name: Docs
 theme:
   name: material
   palette:
     primary: 'Blue Grey'
     accent: 'Pink'
-  feature:
-    tabs: true
+  features:
+      - navigation.tabs
+      - content.code.annotate
+
   #font:
     #text: 'Ubuntu'
     #code: 'Ubuntu Mono'
   language: 'zh'
-nav:
-    - Home: index.md
-    - Algorithms: algorithms.md
-    - DataStruct: dataStruct.md
-    - System: sys.md
-    - Linux: linux.md
-    - IPC: IPC.md
-    - Mutex: mutex.md
-    - RCU: rcu.md
-    - Mysql: database.md
-    - Redis: redis.md
-    - Nginx: nginx.md
-    - Http: http.md
-    - Safe: safe.md
-    - Tcp/Ip: tcp_ip.md
-    - Listen: listen.md
-    - Epoll: epoll.md
-    - NetProgram: net_program.md
-    - DesignPattern : designPattern.md
-    - CppVirtualFun: cppVirtualFun.md
-    - CPP: cpp.md
-    - C: c.md
-    - ThreadPool: thread_pool.md
-    - ProcessDesc: process_desc.md
-    - ThreadSched: thread_sched.md
-    - Netfilter: netfilter.md
-    - Leetcode: leetcode.md
-    - BackQuestion: back-end.md
 
 markdown_extensions:
   - admonition
@@ -64,5 +38,48 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tasklist
   - pymdownx.tilde
+  - pymdownx.highlight
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - 算法基础:
+    - Algorithms: algorithms.md
+    - Leetcode: leetcode.md
+  - 数据结构:
+    - DataStruct: dataStruct.md
+  - System :
+    - System: sys.md
+    - Linux: linux.md
+    - IPC: IPC.md
+    - Mutex: mutex.md
+    - RCU: rcu.md
+    - ThreadPool: thread_pool.md
+    - ProcessDesc: process_desc.md
+    - ThreadSched: thread_sched.md
+  - 数据库:
+    - Mysql: database.md
+    - Redis: redis.md
+  - 网络:
+    - Tcp/Ip: tcp_ip.md
+    - Http: http.md
+    - Safe: safe.md
+    - Nginx: nginx.md
+    - Listen: listen.md
+    - Epoll: epoll.md
+    - NetProgram: net_program.md
+    - Netfilter: netfilter.md
+  - 语言基础:
+    - DesignPattern : designPattern.md
+    - CPP: cpp.md
+    - CppVirtualFun: cppVirtualFun.md
+    - C: c.md
+    - BackQuestion: back-end.md
+
 
 
