@@ -48,13 +48,13 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - 算法基础:
-    - Algorithms: algorithms.md
-    - Leetcode: leetcode.md
+  - 算法:
+    - Algorithms: algorithm/algorithms.md
+    - Leetcode: algorithm/leetcode.md
   - 数据结构:
-    - DataStruct: dataStruct.md
+    - DataStruct: ds/dataStruct.md
   - System :
-    - System: sys.md
+    - System: system/sys.md
     - Linux: linux.md
     - IPC: IPC.md
     - Mutex: mutex.md
@@ -63,23 +63,23 @@ nav:
     - ProcessDesc: process_desc.md
     - ThreadSched: thread_sched.md
   - 数据库:
-    - Mysql: database.md
-    - Redis: redis.md
+    - Mysql: db/database.md
+    - Redis: db/redis.md
   - 网络:
-    - Tcp/Ip: tcp_ip.md
-    - Http: http.md
-    - Safe: safe.md
-    - Nginx: nginx.md
-    - Listen: listen.md
-    - Epoll: epoll.md
-    - NetProgram: net_program.md
-    - Netfilter: netfilter.md
-  - 语言基础:
-    - DesignPattern : designPattern.md
-    - CPP: cpp.md
-    - CppVirtualFun: cppVirtualFun.md
-    - C: c.md
-    - BackQuestion: back-end.md
+    - Tcp/Ip: net/tcp_ip.md
+    - Http: net/http.md
+    - Safe: net/safe.md
+    - Nginx: net/nginx.md
+    - Listen: net/listen.md
+    - Epoll: net/epoll.md
+    - NetProgram: net/net_program.md
+    - Netfilter: net/netfilter.md
+  - C/CPP:
+    - DesignPattern : lang/designPattern.md
+    - CPP: lang/cpp.md
+    - CppVirtualFun: lang/cppVirtualFun.md
+    - C: lang/c.md
+    - BackQuestion: lang/back-end.md
 
 
 

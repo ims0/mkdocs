@@ -47,7 +47,7 @@ int BinSearch(int a[], int start, int end, int val) {
 排序是算法研究中最基础的问题
 
 时间复杂度在算法导论中统一是nlogn
-![avatar](dataStruct_pic/sort_sum.png)
+![avatar](alg_pic/sort_sum.png)
 
 ### 插入排序：直接插入排序
 初始有序数列长度为1，紧跟有序数列的一个元素作为要插入的元素，
@@ -311,7 +311,7 @@ void heap(vector<int> &arr) {
 
 
 ###  归并排序
-![avatar](dataStruct_pic/merge_sort.gif)
+![avatar](alg_pic/merge_sort.gif)
 
 ```cpp linenums="1" hl_lines="3 10 22"
 template<typename T>
