@@ -7,11 +7,46 @@ theme:
   features:
       - navigation.tabs
       - content.code.annotate
-
-  #font:
-    #text: 'Ubuntu'
-    #code: 'Ubuntu Mono'
   language: 'zh'
+
+nav:
+  - Home: index.md
+  - algo:
+    - sort : algorithm/algorithms.md
+    - search : algorithm/search.md
+    - lru : algorithm/lru.md
+    - string : algorithm/string.md
+    - link : algorithm/link.md
+    - Leetcode: algorithm/leetcode.md
+  - DataStruct:
+    - DataStruct: ds/dataStruct.md
+  - System :
+    - System: system/sys.md
+    - Linux: linux.md
+    - IPC: IPC.md
+    - Mutex: mutex.md
+    - RCU: rcu.md
+    - ThreadPool: thread_pool.md
+    - ProcessDesc: process_desc.md
+    - ThreadSched: thread_sched.md
+  - db:
+    - Mysql: db/database.md
+    - Redis: db/redis.md
+  - net:
+    - Tcp/Ip: net/tcp_ip.md
+    - Http: net/http.md
+    - Safe: net/safe.md
+    - Nginx: net/nginx.md
+    - Listen: net/listen.md
+    - Epoll: net/epoll.md
+    - NetProgram: net/net_program.md
+    - Netfilter: net/netfilter.md
+  - C/CPP:
+    - DesignPattern : lang/designPattern.md
+    - CPP: lang/cpp.md
+    - CppVirtualFun: lang/cppVirtualFun.md
+    - C: lang/c.md
+    - BackQuestion: lang/back-end.md
 
 markdown_extensions:
   - admonition
@@ -45,41 +80,3 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-
-nav:
-  - Home: index.md
-  - 算法:
-    - Algorithms: algorithm/algorithms.md
-    - Leetcode: algorithm/leetcode.md
-  - 数据结构:
-    - DataStruct: ds/dataStruct.md
-  - System :
-    - System: system/sys.md
-    - Linux: linux.md
-    - IPC: IPC.md
-    - Mutex: mutex.md
-    - RCU: rcu.md
-    - ThreadPool: thread_pool.md
-    - ProcessDesc: process_desc.md
-    - ThreadSched: thread_sched.md
-  - 数据库:
-    - Mysql: db/database.md
-    - Redis: db/redis.md
-  - 网络:
-    - Tcp/Ip: net/tcp_ip.md
-    - Http: net/http.md
-    - Safe: net/safe.md
-    - Nginx: net/nginx.md
-    - Listen: net/listen.md
-    - Epoll: net/epoll.md
-    - NetProgram: net/net_program.md
-    - Netfilter: net/netfilter.md
-  - C/CPP:
-    - DesignPattern : lang/designPattern.md
-    - CPP: lang/cpp.md
-    - CppVirtualFun: lang/cppVirtualFun.md
-    - C: lang/c.md
-    - BackQuestion: lang/back-end.md
-
-
-

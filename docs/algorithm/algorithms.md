@@ -1,47 +1,5 @@
 # algorithms
 
-## 查找算法
-
-### 二叉查找(lgn)
-```cpp linenums="1" hl_lines="7 9"
-int binarySearch(vector<int> &arr, int start, int end, int target) {
-  while (start <= end) { // 注意
-    int mid = (start + end) / 2;
-    if (arr[mid] == target)
-      return mid;
-    else if (arr[mid] < target)
-      start = mid + 1; // 注意
-    else if (arr[mid] > target)
-      end = mid - 1; // 注意
-  }
-
-  if (end < 0)
-    return start;
-  else if (start == (int)arr.size()) {
-    return end;
-  } else {
-    cout << start << ":" << end << endl;
-    return arr[start] - target < target - arr[end] ? start : end;
-  }
-}
-
-
-
-int BinSearch(int a[], int start, int end, int val) {
-  if (start <= end) // 相等的情况返回，返回相等的值
-  {
-    int mid = (start + end) / 2;
-    if (a[mid] == val)
-      return mid;
-    else if (a[mid] > val)
-      return BinSearch(a, start, mid - 1, val);
-    else if (a[mid] < val)
-      return BinSearch(a, mid + 1, end, val);
-  }
-  return -1;
-}
-```
-
 ## [sort](https://zhuanlan.zhihu.com/p/124356219)
 
 排序是算法研究中最基础的问题
@@ -410,11 +368,11 @@ void radixsort(int data[], int n) //基数排序
 
 ## 单链表排序
 
-### 冒泡排序
+### 单链表冒泡排序
 
 冒泡排序的基本思想就是对于给定的n个元素，从第一个元素开始，依次对相邻的两个元素进行比较，当前面的元素大于后面的元素时，交换其位置，进行一轮比较和换位后，n个元素中最大的数将位于第n位，然后对前（n-1）个元素进行第二轮比较，重复该过程，直到进行比较的元素只剩下一个。
 
-### 快速排序
+### 单链表快速排序
 单链表的快速排序和数组的快速排序在基本细想上是一致的，以从小到大来排序单链表为例，都是选择一个支点，然后把小于支点的元素放到左边，把大于支点的元素放到右边。但是，由于单链表不能像数组那样随机存储，和数组的快排序相比较，还是有一些需要注意的细节：
 
 1. 支点的选取，由于不能随机访问第K个元素，因此每次选择支点时可以取待排序那部分链表的头指针。
@@ -432,162 +390,7 @@ void radixsort(int data[], int n) //基数排序
 [singleLinkSort](code/singleLinkSort.cpp)
 
 
-## 淘汰算法
-
-### LRU
-```cpp
-#include <iostream>
-#include <list>
-#include <string>
-#include <unordered_map>
-
-using namespace std;
-template <typename KeyT, typename ValueT> class LRUCache {
-
-public:
-  using Pair = std::pair<KeyT, ValueT>;
-  using List = std::list<Pair>;
-  using Map = std::unordered_map<KeyT, typename List::iterator>;
-
-  void put(KeyT key, ValueT value);
-  bool get(KeyT key, ValueT &pValue);//返回值bool
-
-  explicit LRUCache(int cap) : m_capacity(cap){};
-  ~LRUCache() {
-    m_list.clear();
-    m_map.clear();
-  };
-  LRUCache(const LRUCache &) = delete;
-  LRUCache &operator=(const LRUCache &) = delete;
-
-private:
-  size_t m_capacity;
-  List m_list;//链表存的是key,val
-  Map m_map;//key,list::iter
-};
-
-template <typename KeyT, typename ValueT>
-void LRUCache<KeyT, ValueT>::put(KeyT key, ValueT value) {
-  auto iter = m_map.find(key);
-  if (iter != m_map.end()) {
-    m_list.erase(iter->second);
-  }
-  m_list.push_front(make_pair(key, value));
-  m_map[key] = m_list.begin();
-  if (m_list.size() > m_capacity) {
-    m_map.erase(m_list.back().first);//map也要删除
-    m_list.pop_back(); //列表最后一个元素删除
-  }
-}
-template <typename KeyT, typename ValueT>
-bool LRUCache<KeyT, ValueT>::get(KeyT key, ValueT &pValue) {
-  auto iter = m_map.find(key);
-  if (iter == m_map.end()) {
-    return false;
-  }
-  auto listIt = iter->second;
-  m_list.push_front(*listIt);
-  m_list.erase(listIt);
-  m_map[key] = m_list.begin();
-  pValue = listIt->second;
-  return true;
-}
-
-int main() {
-  LRUCache<int, string> lrucache(3);
-  lrucache.put(1, "A");
-  lrucache.put(2, "B");
-  lrucache.put(3, "C");
-  std::string value;
-  bool ret = lrucache.get(1, value);
-  cout << "value=" << value << ",ret=" << ret << endl;
-  lrucache.put(4, "D");
-
-  value = "";
-  ret = lrucache.get(2, value);
-  cout << "value=" << value << ",ret=" << ret << endl;
-  return 0;
-}
-/** out **/
-value=A,ret=1
-value=,ret=0
-```
-### LFU
-```cpp
-
-```
 
 
-##  判判断一个链表是否有环，如何找到这个环的起点
-给定一个单链表，只给出头指针h：
-
-1. 如何判断是否存在环？
-2. 如何知道环的长度L？
-3. 如何找出环的连接点在哪里？
-4. 带环链表的长度是多少？
-
-### 解法：
-1. 问题1，使用追赶的方法，设定两个指针slow、fast，从头指针开始，每次分别前进1步、2步。如存在环，则两者相遇；如不存在环，fast遇到NULL退出。
-2. 问题2，记录下问题1的碰撞点p，slow从该点开始，再次回到该点所走过的操作数就是环的长度s。
-3. 问题3：有定理：碰撞点p到连接点的距离=头指针到连接点的距离，因此，分别从碰撞点、头指针开始走，相遇的那个点就是连接点。
-
-证明：链表起点到连接点的距离为x，连接点到相遇点的距离为y，圆的周长为L，
-前置条件：`x<L` 为了保证相遇时slow还没走一圈，
-slow 指针路程：s=x+y，fast指针路程等于`2s = 2(x+y) = x + L + y` 得到 `L=x+y`
-
-4. 问题3中已经求出链表起点到连接点的长度x，加上问题2中求出的环的长度L，二者之和就是带环单链表的长度：x+L
-
-
-## 判断两个相交链表的交点
-同时遍历两个链表到尾部，同时记录两个链表的长度。若两个链表最后的一个节点相同，则两个链表相交。
-有两个链表的长度后，我们就可以知道哪个链表长，设较长的链表长度为len1,短的链表长度为len2。
-则先让较长的链表向后移动(len1-len2)个长度。然后开始从当前位置同时遍历两个链表，当遍历到的链表的节点相同时，则这个节点就是第一个相交的节点。
-![avatar](alg_pic/two_link_join.png)
-
-
-## 字符串单模式匹配
-
-暴力算法BF算法，利用哈希值进行比较的RK算法，以及尽量减少比较次数的BM算法
-
-### [KMP 算法](https://baijiahao.baidu.com/s?id=1659735837100760934&wfr=spider&for=pc)
-
-#### 思路：
-在已匹配的前缀当中寻找到最长可匹配后缀子串和最长可匹配前缀子串，在下一轮直接把两者对齐，从而实现模式串的快速移动。
-
-[kmpCode](code/kmpMatcher.cpp)
-
-### BM算法
-
-[bmCode](code/bmMatcher.cpp)
-
-* BM算法核心思想是，利用模式串本身的特点，在模式串中某个字符与主串不能匹配的时候，将模式串往后多滑动几位，以此来减少不必要的字符比较，提高匹配的效率。
-* BM算法构建的规则有两类，**坏字符规则**和**好后缀规则**。
-* 好后缀规则可以独立于坏字符规则使用。
-* 因为坏字符规则的实现比较耗内存，为了节省内存，我们可以只用好后缀规则来实现BM算法。
-
-原文链接：https://blog.csdn.net/qq_21201267/article/details/92799488
-
-
-## 多匹配模式
-
-
-### trie树
-
-根节点不包含字符，除根节点外每一个节点都只包含一个字符； 从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串； 每个节点的所有子节点包含的字符都不相同。
-
-每一个节点u都包含next[v],value。
-
-next[v]表示节点u的v边指向的节点编号。
-
-value表示危险节点所属的模式串编号，若value=0表示这不是一个危险节点。
-
-根节点表示空串。
-原文链接：https://blog.csdn.net/xmr_pursue_dreams/article/details/80287410
-
-### trie图
-
-trie图的目的是让每一次都精确地跳转。
-
-### AC自动机
 
 
