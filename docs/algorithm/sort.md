@@ -387,9 +387,9 @@ void radixsort(int data[], int n) //基数排序
 
 快排这里还是写了两个函数，Partition这个函数，返回的支点结点的前一个位置。
 
-[singleLinkSort](code/singleLinkSort.cpp)
-
-
+```c
+--8<-- "docs/code/singleLinkSort.cpp"
+```
 
 
 

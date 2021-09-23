@@ -11,15 +11,18 @@ theme:
 
 nav:
   - Home: index.md
-  - algo:
-    - sort : algorithm/algorithms.md
+  - Algo:
+    - sort : algorithm/sort.md
     - search : algorithm/search.md
     - lru : algorithm/lru.md
     - string : algorithm/string.md
     - link : algorithm/link.md
     - Leetcode: algorithm/leetcode.md
   - DataStruct:
-    - DataStruct: ds/dataStruct.md
+    - BST/AVL: ds/dataStruct.md
+    - Hash: ds/hash.md
+    - RBree: ds/rbtree.md
+    - Btree: ds/btree.md
   - System :
     - System: system/sys.md
     - Linux: linux.md
@@ -29,10 +32,13 @@ nav:
     - ThreadPool: thread_pool.md
     - ProcessDesc: process_desc.md
     - ThreadSched: thread_sched.md
-  - db:
+  - DB:
     - Mysql: db/database.md
+    - MysqlOper: db/mysqloper.md
+    - MysqlLock: db/lock.md
+    - MysqlIndex: db/index.md
     - Redis: db/redis.md
-  - net:
+  - Net:
     - Tcp/Ip: net/tcp_ip.md
     - Http: net/http.md
     - Safe: net/safe.md
@@ -41,12 +47,16 @@ nav:
     - Epoll: net/epoll.md
     - NetProgram: net/net_program.md
     - Netfilter: net/netfilter.md
-  - C/CPP:
-    - DesignPattern : lang/designPattern.md
+  - Language:
     - CPP: lang/cpp.md
     - CppVirtualFun: lang/cppVirtualFun.md
     - C: lang/c.md
     - BackQuestion: lang/back-end.md
+  - Design:
+    - Pattern : design/designPattern.md
+    - Creational : design/create.md
+    - Structural : design/struct.md
+    - Behavioral : design/behavioral.md
 
 markdown_extensions:
   - admonition

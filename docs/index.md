@@ -27,10 +27,7 @@ SYSCALL_DEFINE2(listen, int, fd, int, backlog)
 ```
 
 
-```c linenums="1"  
 
---8<-- "docs/code/avl.cpp"
-```
 
 
 
